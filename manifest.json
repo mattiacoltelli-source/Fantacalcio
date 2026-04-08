@@ -1,0 +1,25 @@
+{
+  "name": "FantAssist 2025/26 — Assistente Asta Fantacalcio",
+  "short_name": "FantAssist",
+  "description": "Assistente asta fantacalcio con budget intelligence, watchlist e focus mode",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0d0f14",
+  "theme_color": "#0d0f14",
+  "orientation": "portrait-primary",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

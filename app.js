@@ -66,12 +66,9 @@ const Storage = {
 // ─── LOAD PLAYERS ─────────────────────────────────────────────────────────────
 
 async function loadPlayers() {
-  try {
-    const res = await fetch('./data/players.json');
-    if (!res.ok) throw new Error('fetch failed');
-    AppState.players = await res.json();
-  } catch(e) {
-    console.error('players.json:', e);
+  if (window.PLAYERS && window.PLAYERS.length > 0) {
+    AppState.players = window.PLAYERS;
+  } else {
     AppState.players = [];
     UI.showError('Impossibile caricare i dati dei giocatori.');
   }

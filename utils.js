@@ -2,8 +2,16 @@
 
 const Utils = {
 
+  // Helper: prende le stats giuste (curr se ha presenze, altrimenti prev, altrimenti stats)
+  getStats(player) {
+    if (player.stats_curr && player.stats_curr.matches > 0) return player.stats_curr;
+    if (player.stats_prev) return player.stats_prev;
+    return player.stats || {};
+  },
+
   calcMaxPrice(player) {
     let base = player.value_estimated;
+    const s = Utils.getStats(player);
 
     const roleM = { ATT: 1.15, DIF: 1.00, CEN: 1.00, POR: 0.90 };
     base *= (roleM[player.role] || 1.00);
@@ -11,19 +19,19 @@ const Utils = {
     const tagM = { sleeper: 1.10, hype: 0.85, normal: 1.00 };
     base *= (tagM[player.tag] || 1.00);
 
-    const fv = player.stats?.fantavote || 0;
+    const fv = s.fantavote || 0;
     if (fv >= 7.0)      base *= 1.12;
     else if (fv >= 6.5) base *= 1.06;
     else if (fv >= 6.0) base *= 1.02;
     else if (fv < 5.5)  base *= 0.92;
 
-    const goals = player.stats?.goals || 0;
+    const goals = s.goals || 0;
     if (goals >= 15)      base *= 1.15;
     else if (goals >= 10) base *= 1.10;
     else if (goals >= 6)  base *= 1.06;
     else if (goals >= 3)  base *= 1.02;
 
-    const assists = player.stats?.assists || 0;
+    const assists = s.assists || 0;
     if (assists >= 10)      base *= 1.08;
     else if (assists >= 6)  base *= 1.05;
     else if (assists >= 3)  base *= 1.02;
@@ -31,7 +39,7 @@ const Utils = {
     if (player.on_penalties) base *= 1.08;
 
     if (player.role === 'DIF') {
-      const avg = player.stats?.avg_vote || 0;
+      const avg = s.avg_vote || 0;
       if (avg >= 6.5)       base *= 1.15;
       else if (avg >= 6.25) base *= 1.10;
       else if (avg >= 6.0)  base *= 1.05;
@@ -70,10 +78,8 @@ const Utils = {
     const remaining = totalBudget - spent;
     const slotsLeft = Utils.getRemainingSlots(squad).total;
     const maxPrice  = Utils.calcMaxPrice(player);
-
     const budgetCap = remaining - Math.max(slotsLeft - 1, 0);
-
-    const maxNow = Math.min(maxPrice, Math.max(budgetCap, 1));
+    const maxNow    = Math.min(maxPrice, Math.max(budgetCap, 1));
     return Math.max(maxNow, 1);
   },
 
@@ -82,22 +88,13 @@ const Utils = {
     const maxNow  = Utils.calcMaxOfferNow(player, squad, totalBudget);
     const advice  = Utils.getBudgetAdvice(player, price, squad, totalBudget);
     const role    = player.role;
-    const avgVote = player.stats?.avg_vote || 0;
+    const s       = Utils.getStats(player);
+    const avgVote = s.avg_vote || 0;
 
-    if (role === 'DIF' && avgVote >= 6.5 && price <= maxNow) {
-      return '🛡️ Top difensore per modificatore — vale ogni credito';
-    }
-    if (role === 'DIF' && avgVote >= 6.25 && price <= maxNow) {
-      return '🛡️ Ottimo per modificatore difesa';
-    }
-
-    if (advice === 'NON_COMPRARE' && price > maxNow) {
-      return '🚫 Oltre il limite massimo — fermati qui';
-    }
-    if (price >= maxNow) {
-      return '⚖️ Limite massimo — non salire oltre';
-    }
-
+    if (role === 'DIF' && avgVote >= 6.5 && price <= maxNow)  return '🛡️ Top difensore per modificatore — vale ogni credito';
+    if (role === 'DIF' && avgVote >= 6.25 && price <= maxNow) return '🛡️ Ottimo per modificatore difesa';
+    if (advice === 'NON_COMPRARE' && price > maxNow) return '🚫 Oltre il limite massimo — fermati qui';
+    if (price >= maxNow)  return '⚖️ Limite massimo — non salire oltre';
     if (price < v * 0.85) return '💣 Affare raro — spingi senza esitare';
     if (price < v * 0.90) return '✅ Affare — prendilo';
     if (price > v * 1.10) return '⚠️ Non vale questo prezzo — lascia perdere';
@@ -135,7 +132,7 @@ const Utils = {
 
   canBuy(player, squad, totalBudget) {
     const rem = Utils.getRemainingSlots(squad);
-    if (rem.total <= 0) return { ok: false, reason: 'Rosa completa (25 giocatori)' };
+    if (rem.total <= 0)       return { ok: false, reason: 'Rosa completa (25 giocatori)' };
     if (rem[player.role] <= 0) return { ok: false, reason: `Slot ${player.role} esauriti` };
     const spent = Utils.getTotalSpent(squad);
     if (totalBudget - spent <= 0) return { ok: false, reason: 'Budget esaurito' };
@@ -149,46 +146,26 @@ const Utils = {
     return Math.round((totalBudget - spent) / slots);
   },
 
-  // 🔥 FILTER MIGLIORATO (FIX BUG SEARCH)
   filterPlayers(players, filters) {
     return players.filter(p => {
-
       if (filters.role !== 'ALL' && p.role !== filters.role) return false;
       if (filters.tag  !== 'ALL' && p.tag  !== filters.tag)  return false;
       if (filters.penalties && !p.on_penalties) return false;
-
       if (filters.search) {
-        const q = filters.search.toLowerCase().trim();
-
-        const name = p.name.toLowerCase();
-        const team = p.team.toLowerCase();
-
-        // nome senza punti (martinez l)
+        const q         = filters.search.toLowerCase().trim();
+        const name      = p.name.toLowerCase();
+        const team      = p.team.toLowerCase();
         const cleanName = name.replace(/\./g, '');
-
-        // iniziali (ml)
-        const initials = name
-          .split(' ')
-          .map(w => w[0])
-          .join('');
-
-        if (
-          !name.includes(q) &&
-          !cleanName.includes(q) &&
-          !team.includes(q) &&
-          !initials.includes(q)
-        ) {
-          return false;
-        }
+        const initials  = name.split(' ').map(w => w[0]).join('');
+        if (!name.includes(q) && !cleanName.includes(q) && !team.includes(q) && !initials.includes(q)) return false;
       }
-
       return true;
     });
   },
 
   sortPlayers(players, sortBy) {
     return [...players].sort((a, b) => {
-      if (sortBy === 'fantavote')       return b.stats.fantavote - a.stats.fantavote;
+      if (sortBy === 'fantavote')       return (Utils.getStats(b).fantavote || 0) - (Utils.getStats(a).fantavote || 0);
       if (sortBy === 'value_estimated') return b.value_estimated - a.value_estimated;
       if (sortBy === 'price_initial')   return b.price_initial - a.price_initial;
       if (sortBy === 'name')            return a.name.localeCompare(b.name);
@@ -197,20 +174,10 @@ const Utils = {
   },
 
   roleLabel(role) {
-    return {
-      POR: 'Portiere',
-      DIF: 'Difensore',
-      CEN: 'Centrocampista',
-      ATT: 'Attaccante'
-    }[role] || role;
+    return { POR: 'Portiere', DIF: 'Difensore', CEN: 'Centrocampista', ATT: 'Attaccante' }[role] || role;
   },
 
   roleColor(role) {
-    return {
-      POR: '#f59e0b',
-      DIF: '#3b82f6',
-      CEN: '#8b5cf6',
-      ATT: '#ef4444'
-    }[role] || '#6b7280';
+    return { POR: '#f59e0b', DIF: '#3b82f6', CEN: '#8b5cf6', ATT: '#ef4444' }[role] || '#6b7280';
   }
 };

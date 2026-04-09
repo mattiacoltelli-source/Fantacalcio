@@ -109,7 +109,7 @@
 
 </div>
 
-<!-- 🧠 MOBILE CONSOLE -->
+<!-- 🐞 MOBILE CONSOLE -->
 <div id="mobile-console-toggle">🐞</div>
 <div id="mobile-console">
   <div class="console-header">
@@ -184,14 +184,17 @@ document.getElementById('mobile-console-toggle').onclick = toggleConsole;
 function logToConsole(type, args){
   const out = document.getElementById('console-output');
   const el = document.createElement('div');
+
   el.textContent = `[${type}] ` + args.map(a => {
     try { return typeof a === 'object' ? JSON.stringify(a) : a; }
     catch(e){ return a; }
   }).join(' ');
+
   el.style.color =
     type === 'error' ? '#ff4d4d' :
     type === 'warn' ? '#ffd24d' :
     '#0f0';
+
   out.appendChild(el);
   out.scrollTop = out.scrollHeight;
 }
@@ -209,13 +212,26 @@ function clearConsole(){
   }
 });
 
-// errori globali
+// errori JS classici
 window.onerror = function(msg,src,line,col,err){
   logToConsole('error',[msg, src+':'+line]);
 };
 
+// 🔥 FIX PROMISE (IMPORTANTE)
 window.addEventListener('unhandledrejection', e=>{
-  logToConsole('error',['Promise', e.reason]);
+  let reason = e.reason;
+
+  if (reason instanceof Error) {
+    logToConsole('error', [reason.message, reason.stack]);
+  } else if (typeof reason === 'object') {
+    try {
+      logToConsole('error', [JSON.stringify(reason)]);
+    } catch {
+      logToConsole('error', ['Promise error (object non leggibile)']);
+    }
+  } else {
+    logToConsole('error', [String(reason)]);
+  }
 });
 
 // init settings

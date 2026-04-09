@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0d0f14" />
-  <title>FantAssist</title>
-
+  <meta name="description" content="Assistente asta fantacalcio 2025/26" />
+  <title>FantAssist 2025/26</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -19,15 +19,12 @@
         <div class="app-title">⚽ FantAssist</div>
         <div class="app-subtitle">Asta 2025 / 2026</div>
       </div>
-
       <div class="header-actions">
-        <button onclick="App.exportBackup()">💾</button>
-        <button onclick="document.getElementById('import-file').click()">📂</button>
-
+        <button class="btn-icon" onclick="App.exportBackup()" title="Esporta backup">💾</button>
+        <button class="btn-icon" onclick="document.getElementById('import-file').click()" title="Importa backup">📂</button>
         <input type="file" id="import-file" accept=".json" style="display:none"
           onchange="App.importBackup(this.files[0]); this.value='';" />
-
-        <button onclick="App.resetAll()">Reset</button>
+        <button class="btn-reset" onclick="App.resetAll()">Reset</button>
       </div>
     </div>
   </header>
@@ -35,132 +32,108 @@
   <div id="budget-bar"></div>
 
   <div class="settings-bar">
-    <input type="number" id="setting-budget" value="250"
-      onchange="App.updateBudget(parseInt(this.value))" />
-
-    <select id="setting-formation"
-      onchange="App.updateFormation(this.value)">
-      <option value="3-4-3">3-4-3</option>
-      <option value="4-3-3">4-3-3</option>
-      <option value="4-4-2">4-4-2</option>
-    </select>
+    <label>
+      Budget
+      <input type="number" id="setting-budget" value="250" min="1" max="9999"
+        onchange="App.updateBudget(parseInt(this.value))" />
+      cr
+    </label>
+    <label>
+      Modulo
+      <select id="setting-formation" onchange="App.updateFormation(this.value)">
+        <option value="3-4-3">3-4-3</option>
+        <option value="4-3-3">4-3-3</option>
+        <option value="4-4-2">4-4-2</option>
+        <option value="3-5-2">3-5-2</option>
+        <option value="4-5-1">4-5-1</option>
+        <option value="5-3-2">5-3-2</option>
+      </select>
+    </label>
   </div>
 
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="players" onclick="App.setTab('players')">🔍 Giocatori</button>
-    <button class="tab-btn" data-tab="watchlist" onclick="App.setTab('watchlist')">⭐ Watchlist</button>
-    <button class="tab-btn" data-tab="squad" onclick="App.setTab('squad')">📋 Rosa</button>
+    <button class="tab-btn active" data-tab="players"   onclick="App.setTab('players')">🔍 Giocatori</button>
+    <button class="tab-btn"        data-tab="watchlist" onclick="App.setTab('watchlist')">⭐ Watchlist</button>
+    <button class="tab-btn"        data-tab="squad"     onclick="App.setTab('squad')">📋 Rosa</button>
   </nav>
 
   <div id="view-players">
-    <input id="search-input" placeholder="Cerca..."
-      oninput="App.setFilter('search', this.value)" />
-
-    <div id="player-count"></div>
-    <div id="player-list"></div>
+    <div class="filters-bar">
+      <div class="filters-row">
+        <input type="text" id="search-input" class="search-input"
+          placeholder="Cerca giocatore o squadra..."
+          oninput="App.setFilter('search', this.value)" />
+      </div>
+      <div class="filters-row">
+        <select id="filter-role" class="filter-select" onchange="App.setFilter('role', this.value)">
+          <option value="ALL">Tutti i ruoli</option>
+          <option value="POR">Portieri</option>
+          <option value="DIF">Difensori</option>
+          <option value="CEN">Centrocampisti</option>
+          <option value="ATT">Attaccanti</option>
+        </select>
+        <select id="filter-tag" class="filter-select" onchange="App.setFilter('tag', this.value)">
+          <option value="ALL">Tutti i tag</option>
+          <option value="sleeper">Sleeper</option>
+          <option value="hype">Hype</option>
+          <option value="normal">Normal</option>
+        </select>
+        <label class="filter-check-label">
+          <input type="checkbox" id="filter-penalties" onchange="App.setFilter('penalties', this.checked)" />
+          🎯 Rigoristi
+        </label>
+      </div>
+      <div class="player-count-row">
+        <span id="player-count">0 giocatori</span>
+        <select id="sort-by" class="filter-select" onchange="App.setSort(this.value)">
+          <option value="value_estimated">Ordina: Valore</option>
+          <option value="fantavote">Ordina: Fantavoto</option>
+          <option value="price_initial">Ordina: Quotazione</option>
+          <option value="name">Ordina: Nome</option>
+        </select>
+      </div>
+    </div>
+    <div id="player-list" style="padding:16px 20px;">
+      <div class="empty-state">Caricamento giocatori...</div>
+    </div>
   </div>
 
   <div id="view-watchlist" style="display:none;">
-    <div id="watchlist-list"></div>
+    <p class="wl-hint" style="padding:12px 20px 0;">Usa ⭐ 👀 ❌ nelle card per organizzare la pre-asta. Clicca 🔍 per aprire la modalità focus.</p>
+    <div id="watchlist-list" style="padding:12px 20px;"></div>
   </div>
 
   <div id="view-squad" style="display:none;">
-    <div id="squad-list"></div>
+    <div id="squad-list" style="padding:16px 20px;"></div>
   </div>
 
 </div>
 
-<!-- 🐞 CONSOLE -->
-<div id="mobile-console-toggle">🐞</div>
-
-<div id="mobile-console">
-  <div style="display:flex;justify-content:space-between;padding:5px;background:#111;">
-    <span>Console</span>
-    <div>
-      <button onclick="clearConsole()">🧹</button>
-      <button onclick="toggleConsole()">✖</button>
-    </div>
-  </div>
-  <div id="console-output"></div>
-</div>
-
-<style>
-#mobile-console-toggle{
-  position:fixed;
-  bottom:20px;
-  right:20px;
-  background:#111;
-  color:#fff;
-  border-radius:50%;
-  width:48px;
-  height:48px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-}
-
-#mobile-console{
-  position:fixed;
-  bottom:0;
-  left:0;
-  width:100%;
-  height:40%;
-  background:#000;
-  color:#0f0;
-  display:none;
-  flex-direction:column;
-  font-size:12px;
-  z-index:9999;
-}
-
-#console-output{
-  overflow:auto;
-  flex:1;
-  padding:6px;
-}
-</style>
-
-<!-- 🔥 SCRIPTS (ORDINE + CACHE FIX) -->
-<script src="./players.js?v=5"></script>
-<script src="./utils.js?v=5"></script>
-<script src="./ui.js?v=200"></script>
-<script src="./app.js?v=5"></script>
+<!-- SCRIPTS — ordine obbligatorio -->
+<script src="./players.js?v=10"></script>
+<script src="./utils.js?v=10"></script>
+<script src="./ui.js?v=10"></script>
+<script src="./app.js?v=10"></script>
 
 <script>
-// console
-function toggleConsole(){
-  const el = document.getElementById('mobile-console');
-  el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
-}
-document.getElementById('mobile-console-toggle').onclick = toggleConsole;
-
-function logToConsole(type, args){
-  const out = document.getElementById('console-output');
-  const el = document.createElement('div');
-  el.textContent = `[${type}] ` + args.join(' ');
-  el.style.color = type === 'error' ? 'red' : 'lime';
-  out.appendChild(el);
-  out.scrollTop = out.scrollHeight;
-}
-
-function clearConsole(){
-  document.getElementById('console-output').innerHTML = '';
-}
-
-['log','error'].forEach(type=>{
-  const old = console[type];
-  console[type] = function(...args){
-    old.apply(console,args);
-    logToConsole(type,args);
-  }
-});
-
-window.onerror = (msg)=> logToConsole('error',[msg]);
-
-window.addEventListener('unhandledrejection', e=>{
-  logToConsole('error',[e.reason]);
-});
+  window.addEventListener('DOMContentLoaded', () => {
+    try {
+      const raw = localStorage.getItem('fantacalcio_state');
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.settings?.totalBudget) {
+        const el = document.getElementById('setting-budget');
+        if (el) el.value = d.settings.totalBudget;
+      }
+      if (d.settings?.formation) {
+        const el = document.getElementById('setting-formation');
+        if (el) el.value = d.settings.formation;
+      }
+    } catch(e) {}
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') App.closeFocus();
+  });
 </script>
 
 </body>

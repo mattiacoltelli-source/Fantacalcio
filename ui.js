@@ -131,13 +131,7 @@ const UI = {
           <div class="stat"><span class="stat-label">Assist</span><span class="stat-val">${(player.stats_prev||player.stats).assists}</span></div>
           <div class="stat"><span class="stat-label">Presenze</span><span class="stat-val">${(player.stats_prev||player.stats).matches}</span></div>
         </div>
-        ${player.stats_curr && player.stats_curr.matches > 0 ? \`
-        <div class="card-stats-section-label card-stats-curr-label">🔥 Stagione in corso (${player.stats_curr.matches} pres.)</div>
-        <div class="card-stats">
-          <div class="stat"><span class="stat-label">FV media</span><span class="stat-val curr-val">\${player.stats_curr.fantavote}</span></div>
-          <div class="stat"><span class="stat-label">Gol</span><span class="stat-val curr-val">\${player.stats_curr.goals}</span></div>
-          <div class="stat"><span class="stat-label">Assist</span><span class="stat-val curr-val">\${player.stats_curr.assists}</span></div>
-        </div>\` : ''}
+        ${player.stats_curr && player.stats_curr.matches > 0 ? '<div class="card-stats-section-label card-stats-curr-label">🔥 Stagione in corso (' + player.stats_curr.matches + ' pres.)</div><div class="card-stats"><div class="stat"><span class="stat-label">FV media</span><span class="stat-val curr-val">' + player.stats_curr.fantavote + '</span></div><div class="stat"><span class="stat-label">Gol</span><span class="stat-val curr-val">' + player.stats_curr.goals + '</span></div><div class="stat"><span class="stat-label">Assist</span><span class="stat-val curr-val">' + player.stats_curr.assists + '</span></div></div>' : ''}
       </div>
       <div class="card-watchlist-row">
         <span class="wl-label">Watchlist:</span>

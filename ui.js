@@ -89,11 +89,15 @@ const UI = {
     const roleStyle = `background:${Utils.roleColor(player.role)}22;color:${Utils.roleColor(player.role)};border:1px solid ${Utils.roleColor(player.role)}44`;
     const isOff    = ['ATT','CEN'].includes(player.role) && (player.stats.goals >= 5 || player.stats.assists >= 5);
 
+    const statusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
+    const statusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
     const badges = [
       player.tag === 'sleeper' ? '<span class="badge badge-sleeper">SLEEPER</span>' : '',
       player.tag === 'hype'    ? '<span class="badge badge-hype">HYPE</span>'       : '',
       player.on_penalties      ? '<span class="badge-icon" title="Rigorista">🎯</span>'       : '',
-      isOff                    ? '<span class="badge-icon" title="Ruolo offensivo">⚡</span>' : ''
+      isOff                    ? '<span class="badge-icon" title="Ruolo offensivo">⚡</span>' : '',
+      player.status            ? '<span class="badge-icon" title="' + (statusTip[player.status]||'') + '">' + (statusIcon[player.status]||'') + '</span>' : '',
+      player.injury_prone      ? '<span class="badge-icon" title="Si infortuna spesso">🩹</span>' : ''
     ].join('');
 
     const wBtns = [
@@ -142,7 +146,7 @@ const UI = {
             oninput="UI.evaluateAuction('${player.id}')"
             onkeydown="if(event.key==='Enter') UI.evaluateAuction('${player.id}')"
           />
-          <button class="btn-focus" onclick="App.openFocus('${player.id}')" title="Modalità focus">🎯</button>
+          <button class="btn-focus" onclick="App.openFocus('${player.id}')" title="Modalità focus">🔍</button>
           <button class="btn-beaten" onclick="App.markBeaten('${player.id}')" title="Già battuto — rimuovi dalla lista">🔨</button>
         </div>
         <div class="auction-result" id="result-${player.id}"></div>

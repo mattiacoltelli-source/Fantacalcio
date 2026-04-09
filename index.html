@@ -52,9 +52,9 @@
   </div>
 
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="players"   onclick="App.setTab('players')">🔍 Giocatori</button>
-    <button class="tab-btn"        data-tab="watchlist" onclick="App.setTab('watchlist')">⭐ Watchlist</button>
-    <button class="tab-btn"        data-tab="squad"     onclick="App.setTab('squad')">📋 Rosa</button>
+    <button class="tab-btn active" data-tab="players" onclick="App.setTab('players')">🔍 Giocatori</button>
+    <button class="tab-btn" data-tab="watchlist" onclick="App.setTab('watchlist')">⭐ Watchlist</button>
+    <button class="tab-btn" data-tab="squad" onclick="App.setTab('squad')">📋 Rosa</button>
   </nav>
 
   <div id="view-players">
@@ -109,6 +109,64 @@
 
 </div>
 
+<!-- 🧠 MOBILE CONSOLE -->
+<div id="mobile-console-toggle">🐞</div>
+<div id="mobile-console">
+  <div class="console-header">
+    <span>Console</span>
+    <div>
+      <button onclick="clearConsole()">🧹</button>
+      <button onclick="toggleConsole()">✖</button>
+    </div>
+  </div>
+  <div id="console-output"></div>
+</div>
+
+<style>
+#mobile-console-toggle{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  z-index:9999;
+  background:#111;
+  color:#fff;
+  border-radius:50%;
+  width:48px;
+  height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+}
+
+#mobile-console{
+  position:fixed;
+  bottom:0;
+  left:0;
+  width:100%;
+  height:40%;
+  background:#000;
+  color:#0f0;
+  z-index:9999;
+  display:none;
+  flex-direction:column;
+  font-size:12px;
+}
+
+.console-header{
+  display:flex;
+  justify-content:space-between;
+  padding:6px;
+  background:#111;
+}
+
+#console-output{
+  overflow:auto;
+  padding:6px;
+  flex:1;
+}
+</style>
+
 <!-- SCRIPTS -->
 <script src="./players.js?v=2"></script>
 <script src="./utils.js"></script>
@@ -116,25 +174,72 @@
 <script src="./app.js"></script>
 
 <script>
-  window.addEventListener('DOMContentLoaded', () => {
-    try {
-      const raw = localStorage.getItem('fantacalcio_state');
-      if (!raw) return;
-      const d = JSON.parse(raw);
-      if (d.settings?.totalBudget) {
-        const el = document.getElementById('setting-budget');
-        if (el) el.value = d.settings.totalBudget;
-      }
-      if (d.settings?.formation) {
-        const el = document.getElementById('setting-formation');
-        if (el) el.value = d.settings.formation;
-      }
-    } catch(e) {}
-  });
+function toggleConsole(){
+  const el = document.getElementById('mobile-console');
+  el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
+}
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') App.closeFocus();
-  });
+document.getElementById('mobile-console-toggle').onclick = toggleConsole;
+
+function logToConsole(type, args){
+  const out = document.getElementById('console-output');
+  const el = document.createElement('div');
+  el.textContent = `[${type}] ` + args.map(a => {
+    try { return typeof a === 'object' ? JSON.stringify(a) : a; }
+    catch(e){ return a; }
+  }).join(' ');
+  el.style.color =
+    type === 'error' ? '#ff4d4d' :
+    type === 'warn' ? '#ffd24d' :
+    '#0f0';
+  out.appendChild(el);
+  out.scrollTop = out.scrollHeight;
+}
+
+function clearConsole(){
+  document.getElementById('console-output').innerHTML = '';
+}
+
+// override console
+['log','warn','error'].forEach(type=>{
+  const old = console[type];
+  console[type] = function(...args){
+    old.apply(console,args);
+    logToConsole(type,args);
+  }
+});
+
+// errori globali
+window.onerror = function(msg,src,line,col,err){
+  logToConsole('error',[msg, src+':'+line]);
+};
+
+window.addEventListener('unhandledrejection', e=>{
+  logToConsole('error',['Promise', e.reason]);
+});
+
+// init settings
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const raw = localStorage.getItem('fantacalcio_state');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.settings?.totalBudget) {
+      const el = document.getElementById('setting-budget');
+      if (el) el.value = d.settings.totalBudget;
+    }
+    if (d.settings?.formation) {
+      const el = document.getElementById('setting-formation');
+      if (el) el.value = d.settings.formation;
+    }
+  } catch(e) {
+    console.error(e);
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') App.closeFocus();
+});
 </script>
 
 </body>

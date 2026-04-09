@@ -87,7 +87,8 @@ const UI = {
     const note     = AppState.notes[player.id] || '';
     const maxNow   = Utils.calcMaxOfferNow(player, AppState.squad, AppState.settings.totalBudget);
     const roleStyle = `background:${Utils.roleColor(player.role)}22;color:${Utils.roleColor(player.role)};border:1px solid ${Utils.roleColor(player.role)}44`;
-    const isOff    = ['ATT','CEN'].includes(player.role) && (player.stats.goals >= 5 || player.stats.assists >= 5);
+    const stats    = player.stats_prev || player.stats || {};
+    const isOff    = ['ATT','CEN'].includes(player.role) && ((stats.goals || 0) >= 5 || (stats.assists || 0) >= 5);
 
     const statusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
     const statusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
@@ -241,7 +242,8 @@ const UI = {
     const wStatus   = AppState.watchlist[player.id] || null;
     const roleStyle = `background:${Utils.roleColor(player.role)}22;color:${Utils.roleColor(player.role)};border:1px solid ${Utils.roleColor(player.role)}44`;
     const inSquad   = AppState.squad.some(p => p.id === playerId);
-    const isOff     = ['ATT','CEN'].includes(player.role) && (player.stats.goals >= 5 || player.stats.assists >= 5);
+    const fstats    = player.stats_prev || player.stats || {};
+    const isOff     = ['ATT','CEN'].includes(player.role) && ((fstats.goals || 0) >= 5 || (fstats.assists || 0) >= 5);
 
     const badges = [
       player.tag === 'sleeper' ? '<span class="badge badge-sleeper">SLEEPER</span>' : '',
@@ -299,19 +301,19 @@ const UI = {
             </div>
             <div class="focus-stat">
               <span class="focus-stat-label">FV media</span>
-              <span class="focus-stat-val">${player.stats.fantavote}</span>
+              <span class="focus-stat-val">${(player.stats_prev||player.stats||{}).fantavote}</span>
             </div>
             <div class="focus-stat">
               <span class="focus-stat-label">Gol</span>
-              <span class="focus-stat-val">${player.stats.goals}</span>
+              <span class="focus-stat-val">${(player.stats_prev||player.stats||{}).goals}</span>
             </div>
             <div class="focus-stat">
               <span class="focus-stat-label">Assist</span>
-              <span class="focus-stat-val">${player.stats.assists}</span>
+              <span class="focus-stat-val">${(player.stats_prev||player.stats||{}).assists}</span>
             </div>
             <div class="focus-stat">
               <span class="focus-stat-label">Presenze</span>
-              <span class="focus-stat-val">${player.stats.matches}</span>
+              <span class="focus-stat-val">${(player.stats_prev||player.stats||{}).matches}</span>
             </div>
           </div>
 

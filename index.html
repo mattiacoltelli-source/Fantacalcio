@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0d0f14" />
-  <meta name="description" content="Assistente asta fantacalcio 2025/26 — budget intelligence, watchlist, focus mode" />
   <title>FantAssist 2025/26</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css" />
@@ -105,7 +104,7 @@
 
   <!-- VIEW: WATCHLIST -->
   <div id="view-watchlist" style="display:none;">
-    <p class="wl-hint" style="padding:12px 20px 0;">Usa ⭐ 👀 ❌ nelle card per organizzare la pre-asta. Clicca 🎯 per aprire la modalità focus.</p>
+    <p class="wl-hint" style="padding:12px 20px 0;">Usa ⭐ 👀 ❌ nelle card per organizzare la pre-asta.</p>
     <div id="watchlist-list" style="padding:12px 20px;"></div>
   </div>
 
@@ -116,14 +115,39 @@
 
 </div>
 
+<!-- DEBUG PANEL — rimuovere dopo che funziona -->
+<div id="debug-panel" style="position:fixed;bottom:0;left:0;right:0;background:#0a0a1a;color:#00ff88;font-size:12px;padding:8px 12px;font-family:monospace;z-index:9999;max-height:120px;overflow-y:auto;border-top:2px solid #00ff88;"></div>
+
 <!-- SCRIPTS -->
-<script src="./players.js"></script>
-<script src="./utils.js"></script>
-<script src="./ui.js"></script>
-<script src="./app.js"></script>
+<script>
+window._dbg = function(msg) {
+  const p = document.getElementById('debug-panel');
+  if (p) p.innerHTML += msg + '<br>';
+};
+window.onerror = function(msg, src, line) {
+  window._dbg('❌ ' + msg + ' — riga ' + line);
+};
+window._dbg('⏳ Avvio caricamento script...');
+</script>
+
+<script src="./players.js"
+  onload="window._dbg('✅ players.js: ' + (window.PLAYERS ? window.PLAYERS.length + ' giocatori' : 'PLAYERS non definito'))"
+  onerror="window._dbg('❌ players.js NON trovato')">
+</script>
+<script src="./utils.js"
+  onload="window._dbg('✅ utils.js OK')"
+  onerror="window._dbg('❌ utils.js NON trovato')">
+</script>
+<script src="./ui.js"
+  onload="window._dbg('✅ ui.js OK')"
+  onerror="window._dbg('❌ ui.js NON trovato')">
+</script>
+<script src="./app.js"
+  onload="window._dbg('✅ app.js OK')"
+  onerror="window._dbg('❌ app.js NON trovato')">
+</script>
 
 <script>
-  // Ripristina settings UI dal localStorage
   window.addEventListener('DOMContentLoaded', () => {
     try {
       const raw = localStorage.getItem('fantacalcio_state');
@@ -140,7 +164,6 @@
     } catch(e) {}
   });
 
-  // Chiudi focus con ESC
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') App.closeFocus();
   });

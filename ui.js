@@ -1,6 +1,6 @@
-// ui.js — VERSIONE FINALE STABILE (UI ORIGINALE + FIX)
+// ui.js — UI ORIGINALE FIXATA (STABILE)
 
-console.log("UI FINAL READY");
+console.log("UI ORIGINAL FIXED LOADED");
 
 window.UI = {
 
@@ -18,7 +18,7 @@ window.UI = {
     const spent = Utils.getTotalSpent(AppState.squad || []);
     const rem   = total - spent;
     const avg   = Utils.avgBudgetPerSlot(AppState.squad || [], total);
-    const slots = Utils.getRemainingSlots(AppState.squad || []);
+    const slots = Utils.getRemainingSlots(AppState.squad || {});
     const pct   = total ? Math.min(100, Math.round((spent / total) * 100)) : 0;
 
     const bar = document.getElementById('budget-bar');
@@ -88,29 +88,32 @@ window.UI = {
 
     const stats = player.stats || {};
     const statsPrev = player.stats_prev || stats;
-    const statsCurr = player.stats_curr || null;
+    const statsCurr = player.stats_curr;
 
-    const wStatus  = AppState.watchlist[player.id] || null;
-    const note     = AppState.notes[player.id] || '';
+    const wStatus = AppState.watchlist[player.id] || null;
+    const note = AppState.notes[player.id] || '';
 
     const maxNow = Utils.calcMaxOfferNow(player, AppState.squad, AppState.settings.totalBudget);
 
     const roleColor = Utils.roleColor(player.role);
     const roleStyle = `background:${roleColor}22;color:${roleColor};border:1px solid ${roleColor}44`;
 
-    const isOff = ['ATT','CEN'].includes(player.role) && ((stats.goals||0) >= 5 || (stats.assists||0) >= 5);
+    const isOff = ['ATT','CEN'].includes(player.role) && ((stats.goals||0)>=5 || (stats.assists||0)>=5);
 
     const badges = [
       player.tag === 'sleeper' ? '<span class="badge badge-sleeper">SLEEPER</span>' : '',
-      player.tag === 'hype'    ? '<span class="badge badge-hype">HYPE</span>' : '',
+      player.tag === 'hype' ? '<span class="badge badge-hype">HYPE</span>' : '',
       player.on_penalties ? '<span class="badge-icon">🎯</span>' : '',
       isOff ? '<span class="badge-icon">⚡</span>' : ''
     ].join('');
 
-    const wBtns = ['want','watch','avoid'].map(s =>
-      `<button class="wl-btn ${wStatus===s?'wl-active-'+s:''}" onclick="App.setWatchlist('${player.id}','${s}')">
-        ${s==='want'?'⭐':s==='watch'?'👀':'❌'}
-      </button>`
+    const wBtns = [
+      { s:'want',i:'⭐' },
+      { s:'watch',i:'👀' },
+      { s:'avoid',i:'❌' }
+    ].map(b =>
+      `<button class="wl-btn ${wStatus===b.s?'wl-active-'+b.s:''}"
+        onclick="App.setWatchlist('${player.id}','${b.s}')">${b.i}</button>`
     ).join('');
 
     return `
@@ -129,32 +132,42 @@ window.UI = {
         <div class="player-team">${player.team}</div>
 
         <div class="card-stats">
-          <div class="stat"><span>Valore</span><span>${player.value_estimated||0}</span></div>
-          <div class="stat"><span>Quotaz.</span><span>${player.price_initial||0}</span></div>
-          <div class="stat"><span>Max</span><span>${maxNow}</span></div>
+          <div class="stat"><span class="stat-label">Valore</span><span class="stat-val">${player.value_estimated||0}</span></div>
+          <div class="stat"><span class="stat-label">Quotaz.</span><span class="stat-val">${player.price_initial||0}</span></div>
+          <div class="stat"><span class="stat-label">💰 Max</span><span class="stat-val">${maxNow}</span></div>
         </div>
 
+        <div class="card-stats-section-label">📅 Stagione precedente</div>
         <div class="card-stats">
-          <div class="stat"><span>FV</span><span>${statsPrev.fantavote||'-'}</span></div>
-          <div class="stat"><span>Gol</span><span>${statsPrev.goals||0}</span></div>
-          <div class="stat"><span>Assist</span><span>${statsPrev.assists||0}</span></div>
+          <div class="stat"><span class="stat-label">FV</span><span class="stat-val">${statsPrev.fantavote||'-'}</span></div>
+          <div class="stat"><span class="stat-label">Gol</span><span class="stat-val">${statsPrev.goals||0}</span></div>
+          <div class="stat"><span class="stat-label">Assist</span><span class="stat-val">${statsPrev.assists||0}</span></div>
         </div>
 
         ${statsCurr && statsCurr.matches>0 ? `
+          <div class="card-stats-section-label">🔥 In corso</div>
           <div class="card-stats">
-            <div class="stat"><span>FV</span><span>${statsCurr.fantavote}</span></div>
-            <div class="stat"><span>Gol</span><span>${statsCurr.goals}</span></div>
-            <div class="stat"><span>Assist</span><span>${statsCurr.assists}</span></div>
+            <div class="stat"><span class="stat-label">FV</span><span class="stat-val">${statsCurr.fantavote}</span></div>
+            <div class="stat"><span class="stat-label">Gol</span><span class="stat-val">${statsCurr.goals}</span></div>
+            <div class="stat"><span class="stat-label">Assist</span><span class="stat-val">${statsCurr.assists}</span></div>
           </div>
         `:''}
       </div>
 
       <div class="card-watchlist-row">
-        ${wBtns}
+        <div class="wl-buttons">${wBtns}</div>
+      </div>
+
+      <div class="card-note-row">
+        <textarea class="note-input"
+          placeholder="Appunti..."
+          onblur="App.saveNote('${player.id}',this.value)">${note}</textarea>
       </div>
 
       <div class="card-auction">
-        <input type="number" id="price-${player.id}" placeholder="Prezzo"
+        <input type="number"
+          id="price-${player.id}"
+          placeholder="Prezzo"
           oninput="UI.evaluateAuction('${player.id}')">
         <div id="result-${player.id}"></div>
       </div>
@@ -162,21 +175,21 @@ window.UI = {
     </div>`;
   },
 
-  evaluateAuction(id) {
+  evaluateAuction(id){
     const p = AppState.players.find(x=>x.id===id);
-    if (!p) return;
+    if(!p) return;
 
     const input = document.getElementById(`price-${id}`);
     const box = document.getElementById(`result-${id}`);
-    if (!input || !box) return;
+    if(!input || !box) return;
 
     const price = parseInt(input.value);
-    if (!price) { box.innerHTML=''; return; }
+    if(!price){ box.innerHTML=''; return; }
 
     const status = Utils.evaluatePurchase(p, price);
     const max = Utils.calcMaxOfferNow(p, AppState.squad, AppState.settings.totalBudget);
 
-    box.innerHTML = `<div>${status} • max ${max}</div>`;
+    box.innerHTML = `<div class="result-inline">${status} • max ${max}</div>`;
   },
 
   renderWatchlist(){},

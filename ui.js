@@ -211,11 +211,15 @@ const UI = {
     var avg     = Utils.avgBudgetPerSlot(AppState.squad, total);
     var wLabels = {want:'⭐ Voglio',watch:'👀 Osservo',avoid:'❌ Evito'};
 
+    var focusStatusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
+    var focusStatusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
     var badges = '';
     if (player.tag==='sleeper') badges += '<span class="badge badge-sleeper">SLEEPER</span>';
     if (player.tag==='hype')    badges += '<span class="badge badge-hype">HYPE</span>';
-    if (player.on_penalties)    badges += '<span class="badge-icon">&#127919;</span>';
-    if (isOff)                  badges += '<span class="badge-icon">&#9889;</span>';
+    if (player.on_penalties)    badges += '<span class="badge-icon" title="Rigorista">&#127919;</span>';
+    if (isOff)                  badges += '<span class="badge-icon" title="Ruolo offensivo">&#9889;</span>';
+    if (player.status)          badges += '<span class="badge-icon" title="' + (focusStatusTip[player.status]||'') + '">' + (focusStatusIcon[player.status]||'') + '</span>';
+    if (player.injury_prone)    badges += '<span class="badge-icon" title="Si infortuna spesso">&#129657;</span>';
 
     var overlay = document.getElementById('focus-overlay');
     if (!overlay) {

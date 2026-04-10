@@ -178,6 +178,7 @@ const App = {
     AppState.beaten = AppState.beaten.filter(id => id !== playerId);
     Storage.save();
     UI.renderPlayerList();
+    UI.renderBeaten();
   },
 
   // PRIORITÀ WATCHLIST

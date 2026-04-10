@@ -4,13 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0d0f14" />
+  <meta name="description" content="Assistente asta fantacalcio 2025/26" />
   <title>FantAssist 2025/26</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./style.css?v=12" />
 </head>
 <body>
 
 <div class="app-container">
+
   <header class="app-header">
     <div class="header-top">
       <div>
@@ -18,17 +20,26 @@
         <div class="app-subtitle">Asta 2025 / 2026</div>
       </div>
       <div class="header-actions">
-        <button class="btn-icon" onclick="App.exportBackup()">💾</button>
-        <button class="btn-icon" onclick="document.getElementById('import-file').click()">📂</button>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="App.importBackup(this.files[0]); this.value='';" />
+        <button class="btn-icon" onclick="App.exportBackup()" title="Esporta backup">💾</button>
+        <button class="btn-icon" onclick="document.getElementById('import-file').click()" title="Importa backup">📂</button>
+        <input type="file" id="import-file" accept=".json" style="display:none"
+          onchange="App.importBackup(this.files[0]); this.value='';" />
         <button class="btn-reset" onclick="App.resetAll()">Reset</button>
       </div>
     </div>
   </header>
+
   <div id="budget-bar"></div>
+
   <div class="settings-bar">
-    <label>Budget <input type="number" id="setting-budget" value="250" min="1" max="9999" onchange="App.updateBudget(parseInt(this.value))" /> cr</label>
-    <label>Modulo
+    <label>
+      Budget
+      <input type="number" id="setting-budget" value="250" min="1" max="9999"
+        onchange="App.updateBudget(parseInt(this.value))" />
+      cr
+    </label>
+    <label>
+      Modulo
       <select id="setting-formation" onchange="App.updateFormation(this.value)">
         <option value="3-4-3">3-4-3</option>
         <option value="4-3-3">4-3-3</option>
@@ -39,15 +50,19 @@
       </select>
     </label>
   </div>
+
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="players" onclick="App.setTab('players')">🔍 Giocatori</button>
-    <button class="tab-btn" data-tab="watchlist" onclick="App.setTab('watchlist')">⭐ Watchlist</button>
-    <button class="tab-btn" data-tab="squad" onclick="App.setTab('squad')">📋 Rosa</button>
+    <button class="tab-btn active" data-tab="players"   onclick="App.setTab('players')">🔍 Giocatori</button>
+    <button class="tab-btn"        data-tab="watchlist" onclick="App.setTab('watchlist')">⭐ Watchlist</button>
+    <button class="tab-btn"        data-tab="squad"     onclick="App.setTab('squad')">📋 Rosa</button>
   </nav>
+
   <div id="view-players">
     <div class="filters-bar">
       <div class="filters-row">
-        <input type="text" id="search-input" class="search-input" placeholder="Cerca giocatore o squadra..." oninput="App.setFilter('search', this.value)" />
+        <input type="text" id="search-input" class="search-input"
+          placeholder="Cerca giocatore o squadra..."
+          oninput="App.setFilter('search', this.value)" />
       </div>
       <div class="filters-row">
         <select id="filter-role" class="filter-select" onchange="App.setFilter('role', this.value)">
@@ -82,36 +97,23 @@
       <div class="empty-state">Caricamento giocatori...</div>
     </div>
   </div>
+
   <div id="view-watchlist" style="display:none;">
-    <p class="wl-hint" style="padding:12px 20px 0;">Usa ⭐ 👀 ❌ nelle card per organizzare la pre-asta.</p>
+    <p class="wl-hint" style="padding:12px 20px 0;">Usa ⭐ 👀 ❌ nelle card per organizzare la pre-asta. Clicca 🔍 per aprire la modalità focus.</p>
     <div id="watchlist-list" style="padding:12px 20px;"></div>
   </div>
+
   <div id="view-squad" style="display:none;">
     <div id="squad-list" style="padding:16px 20px;"></div>
   </div>
+
 </div>
 
-<!-- DEBUG PANEL -->
-<div id="dbg" style="position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:11px;font-family:monospace;padding:6px;max-height:150px;overflow-y:auto;z-index:9999;border-top:2px solid #0f0;"></div>
-
-<script>
-function dbg(msg, color) {
-  var p = document.getElementById('dbg');
-  var d = document.createElement('div');
-  d.textContent = msg;
-  d.style.color = color || '#0f0';
-  p.appendChild(d);
-  p.scrollTop = p.scrollHeight;
-}
-window.onerror = function(msg, src, line) { dbg('ERRORE: ' + msg + ' (riga ' + line + ')', 'red'); };
-window.addEventListener('unhandledrejection', function(e) { dbg('PROMISE: ' + e.reason, 'red'); });
-dbg('Avvio...');
-</script>
-
-<script src="./players.js?v=11" onload="dbg('players.js OK — PLAYERS: ' + (window.PLAYERS ? window.PLAYERS.length : 'MANCANTE'))" onerror="dbg('players.js ERRORE CARICAMENTO','red')"></script>
-<script src="./utils.js?v=11"   onload="dbg('utils.js OK')"   onerror="dbg('utils.js ERRORE','red')"></script>
-<script src="./ui.js?v=11"      onload="dbg('ui.js OK')"      onerror="dbg('ui.js ERRORE','red')"></script>
-<script src="./app.js?v=11"     onload="dbg('app.js OK')"     onerror="dbg('app.js ERRORE','red')"></script>
+<!-- SCRIPTS -->
+<script src="./players.js?v=12"></script>
+<script src="./utils.js?v=12"></script>
+<script src="./ui.js?v=12"></script>
+<script src="./app.js?v=12"></script>
 
 <script>
   window.addEventListener('DOMContentLoaded', function() {

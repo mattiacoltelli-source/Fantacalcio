@@ -667,3 +667,22 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 .card-stats-section-label { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-family: 'Barlow', sans-serif; font-weight: 600; padding: 6px 0 2px; display: flex; align-items: center; gap: 4px; }
 .card-stats-curr-label { color: var(--accent); }
 .stat-val.curr-val { color: var(--accent); }
+/* ── DATI AVANZATI (xG/xA/Tiri) ── */
+.card-stats-adv-label { color: #a78bfa; }
+
+.stat-adv {
+  border: 1px solid #7c3aed33;
+  background: #7c3aed0d;
+}
+.adv-val {
+  color: #a78bfa !important;
+  font-weight: 700;
+}
+
+.focus-stat-adv {
+  border: 1px solid #7c3aed44;
+  background: #7c3aed11;
+}
+.adv-focus-val {
+  color: #a78bfa !important;
+}

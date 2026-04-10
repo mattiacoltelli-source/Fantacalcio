@@ -166,6 +166,14 @@ const UI = {
           '<div class="stat"><span class="stat-label">Assist</span><span class="stat-val">' + (sp.assists||0) + '</span></div>' +
           '<div class="stat"><span class="stat-label">Presenze</span><span class="stat-val">' + (sp.matches||0) + '</span></div>' +
         '</div>' +
+        (sp.xg != null ? (
+          '<div class="card-stats-section-label card-stats-adv-label">&#128200; Dati avanzati</div>' +
+          '<div class="card-stats">' +
+            '<div class="stat stat-adv"><span class="stat-label">xG</span><span class="stat-val adv-val">' + (sp.xg||0).toFixed(1) + '</span></div>' +
+            '<div class="stat stat-adv"><span class="stat-label">xA</span><span class="stat-val adv-val">' + (sp.xa||0).toFixed(1) + '</span></div>' +
+            '<div class="stat stat-adv"><span class="stat-label">Tiri/90'</span><span class="stat-val adv-val">' + (sp.shots_per90||0).toFixed(1) + '</span></div>' +
+          '</div>'
+        ) : '') +
         currSection +
       '</div>' +
       '<div class="card-watchlist-row">' +
@@ -297,6 +305,14 @@ const UI = {
             '<div class="focus-stat"><span class="focus-stat-label">Assist</span><span class="focus-stat-val">' + (sp.assists||0) + '</span></div>' +
             '<div class="focus-stat"><span class="focus-stat-label">Presenze</span><span class="focus-stat-val">' + (sp.matches||0) + '</span></div>' +
           '</div>' +
+          (sp.xg != null ? (
+            '<div class="card-stats-section-label card-stats-adv-label" style="padding:8px 0 4px;">&#128200; Dati avanzati</div>' +
+            '<div class="focus-stats">' +
+              '<div class="focus-stat focus-stat-adv"><span class="focus-stat-label">xG</span><span class="focus-stat-val adv-focus-val">' + (sp.xg||0).toFixed(1) + '</span></div>' +
+              '<div class="focus-stat focus-stat-adv"><span class="focus-stat-label">xA</span><span class="focus-stat-val adv-focus-val">' + (sp.xa||0).toFixed(1) + '</span></div>' +
+              '<div class="focus-stat focus-stat-adv"><span class="focus-stat-label">Tiri/90\'</span><span class="focus-stat-val adv-focus-val">' + (sp.shots_per90||0).toFixed(1) + '</span></div>' +
+            '</div>'
+          ) : '') +
           '<div class="focus-budget-row">' +
             '<div class="focus-budget-item"><span>Rimasto</span><strong>' + rem + ' cr</strong></div>' +
             '<div class="focus-budget-item"><span>Media/slot</span><strong>' + avg + ' cr</strong></div>' +

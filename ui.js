@@ -7,47 +7,49 @@ const UI = {
     UI.renderTabs();
     UI.renderFilters();
     UI.renderPlayerList();
+    UI.renderBeaten();
     UI.renderWatchlist();
     UI.renderSquad();
   },
 
   renderBudgetBar() {
-    const total = AppState.settings.totalBudget;
-    const spent = Utils.getTotalSpent(AppState.squad);
-    const rem   = total - spent;
-    const avg   = Utils.avgBudgetPerSlot(AppState.squad, total);
-    const slots = Utils.getRemainingSlots(AppState.squad);
-    const pct   = Math.min(100, Math.round((spent / total) * 100));
-    const bar   = document.getElementById('budget-bar');
+    var total = AppState.settings.totalBudget;
+    var spent = Utils.getTotalSpent(AppState.squad);
+    var rem   = total - spent;
+    var avg   = Utils.avgBudgetPerSlot(AppState.squad, total);
+    var slots = Utils.getRemainingSlots(AppState.squad);
+    var pct   = Math.min(100, Math.round((spent / total) * 100));
+    var bar   = document.getElementById('budget-bar');
     if (!bar) return;
-    bar.innerHTML = `
-      <div class="budget-grid">
-        <div class="budget-item"><span class="budget-label">Totale</span><span class="budget-value">${total} cr</span></div>
-        <div class="budget-item"><span class="budget-label">Speso</span><span class="budget-value spent">${spent} cr</span></div>
-        <div class="budget-item"><span class="budget-label">Rimasto</span><span class="budget-value remaining">${rem} cr</span></div>
-        <div class="budget-item"><span class="budget-label">Media/slot</span><span class="budget-value">${avg} cr</span></div>
-      </div>
-      <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
-      <div class="slots-grid">
-        <div class="slot-item"><span class="slot-role por">POR</span><span>${3 - slots.POR}/3</span></div>
-        <div class="slot-item"><span class="slot-role dif">DIF</span><span>${8 - slots.DIF}/8</span></div>
-        <div class="slot-item"><span class="slot-role cen">CEN</span><span>${8 - slots.CEN}/8</span></div>
-        <div class="slot-item"><span class="slot-role att">ATT</span><span>${6 - slots.ATT}/6</span></div>
-        <div class="slot-item"><span class="slot-role total">TOT</span><span>${AppState.squad.length}/25</span></div>
-      </div>`;
+    bar.innerHTML =
+      '<div class="budget-grid">' +
+        '<div class="budget-item"><span class="budget-label">Totale</span><span class="budget-value">' + total + ' cr</span></div>' +
+        '<div class="budget-item"><span class="budget-label">Speso</span><span class="budget-value spent">' + spent + ' cr</span></div>' +
+        '<div class="budget-item"><span class="budget-label">Rimasto</span><span class="budget-value remaining">' + rem + ' cr</span></div>' +
+        '<div class="budget-item"><span class="budget-label">Media/slot</span><span class="budget-value">' + avg + ' cr</span></div>' +
+      '</div>' +
+      '<div class="progress-bar-wrap"><div class="progress-bar" style="width:' + pct + '%"></div></div>' +
+      '<div class="slots-grid">' +
+        '<div class="slot-item"><span class="slot-role por">POR</span><span>' + (3 - slots.POR) + '/3</span></div>' +
+        '<div class="slot-item"><span class="slot-role dif">DIF</span><span>' + (8 - slots.DIF) + '/8</span></div>' +
+        '<div class="slot-item"><span class="slot-role cen">CEN</span><span>' + (8 - slots.CEN) + '/8</span></div>' +
+        '<div class="slot-item"><span class="slot-role att">ATT</span><span>' + (6 - slots.ATT) + '/6</span></div>' +
+        '<div class="slot-item"><span class="slot-role total">TOT</span><span>' + AppState.squad.length + '/25</span></div>' +
+      '</div>';
   },
 
   renderTabs() {
-    document.querySelectorAll('.tab-btn').forEach(t =>
-      t.classList.toggle('active', t.dataset.tab === AppState.activeTab));
+    document.querySelectorAll('.tab-btn').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.tab === AppState.activeTab);
+    });
     document.getElementById('view-players').style.display   = AppState.activeTab === 'players'   ? 'block' : 'none';
     document.getElementById('view-watchlist').style.display = AppState.activeTab === 'watchlist' ? 'block' : 'none';
     document.getElementById('view-squad').style.display     = AppState.activeTab === 'squad'     ? 'block' : 'none';
   },
 
   renderFilters() {
-    const set    = (id, val) => { const el = document.getElementById(id); if (el) el.value   = val; };
-    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+    var set    = function(id, val) { var el = document.getElementById(id); if (el) el.value   = val; };
+    var setChk = function(id, val) { var el = document.getElementById(id); if (el) el.checked = val; };
     set('filter-role',     AppState.filters.role);
     set('filter-tag',      AppState.filters.tag);
     set('sort-by',         AppState.sort);
@@ -56,40 +58,68 @@ const UI = {
   },
 
   renderPlayerList() {
-    const container = document.getElementById('player-list');
+    var container = document.getElementById('player-list');
     if (!container) return;
-    const squadIds  = new Set(AppState.squad.map(p => p.id));
-    const beatenIds = new Set(AppState.beaten || []);
-    let players = Utils.filterPlayers(AppState.players, AppState.filters)
-                       .filter(p => !squadIds.has(p.id) && !beatenIds.has(p.id));
+    var squadIds  = new Set(AppState.squad.map(function(p){ return p.id; }));
+    var beatenIds = new Set(AppState.beaten || []);
+    var players = Utils.filterPlayers(AppState.players, AppState.filters)
+                       .filter(function(p){ return !squadIds.has(p.id) && !beatenIds.has(p.id); });
     players = Utils.sortPlayers(players, AppState.sort);
-    const count = document.getElementById('player-count');
+    var count = document.getElementById('player-count');
     if (count) count.textContent = players.length + ' giocatori';
     if (players.length === 0) {
       container.innerHTML = '<div class="empty-state">Nessun giocatore trovato.</div>';
       return;
     }
-    container.innerHTML = players.map(p => UI.playerCard(p)).join('');
+    container.innerHTML = players.map(function(p){ return UI.playerCard(p); }).join('');
   },
 
+  // ─── BATTUTI ────────────────────────────────────────────────────────────────
+
+  renderBeaten() {
+    var container = document.getElementById('beaten-list');
+    if (!container) return;
+    var beaten = (AppState.beaten || []).map(function(id) {
+      return AppState.players.find(function(p){ return p.id === id; });
+    }).filter(Boolean);
+    if (beaten.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="padding:16px;">Nessun giocatore battuto.</div>';
+      return;
+    }
+    var html = '';
+    beaten.forEach(function(p) {
+      var rc = Utils.roleColor(p.role);
+      html +=
+        '<div class="beaten-row">' +
+          '<span class="role-pill" style="background:' + rc + '22;color:' + rc + ';border:1px solid ' + rc + '44;font-size:.7rem;padding:2px 7px;">' + p.role + '</span>' +
+          '<span class="beaten-name">' + p.name + '</span>' +
+          '<span class="beaten-team">' + p.team + '</span>' +
+          '<button class="btn-unbeaten" onclick="App.unmarkBeaten(\'' + p.id + '\')" title="Rimetti in lista">&#8635;</button>' +
+        '</div>';
+    });
+    container.innerHTML = html;
+  },
+
+  // ─── PLAYER CARD ────────────────────────────────────────────────────────────
+
   playerCard(player) {
-    const wStatus   = AppState.watchlist[player.id] || null;
-    const note      = AppState.notes[player.id] || '';
-    const maxNow    = Utils.calcMaxOfferNow(player, AppState.squad, AppState.settings.totalBudget);
-    const rc        = Utils.roleColor(player.role);
-    const roleStyle = 'background:' + rc + '22;color:' + rc + ';border:1px solid ' + rc + '44';
-    const sp        = player.stats_prev || player.stats || {};
-    const sc        = player.stats_curr || null;
-    const isOff     = ['ATT','CEN'].includes(player.role) && ((sp.goals || 0) >= 5 || (sp.assists || 0) >= 5);
-    const statusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
-    const statusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
+    var wStatus   = AppState.watchlist[player.id] || null;
+    var note      = AppState.notes[player.id] || '';
+    var maxNow    = Utils.calcMaxOfferNow(player, AppState.squad, AppState.settings.totalBudget);
+    var rc        = Utils.roleColor(player.role);
+    var roleStyle = 'background:' + rc + '22;color:' + rc + ';border:1px solid ' + rc + '44';
+    var sp        = player.stats_prev || player.stats || {};
+    var sc        = player.stats_curr || null;
+    var isOff     = ['ATT','CEN'].includes(player.role) && ((sp.goals || 0) >= 5 || (sp.assists || 0) >= 5);
+    var statusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
+    var statusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
 
     var badges = '';
     if (player.tag === 'sleeper') badges += '<span class="badge badge-sleeper">SLEEPER</span>';
     if (player.tag === 'hype')    badges += '<span class="badge badge-hype">HYPE</span>';
     if (player.on_penalties)      badges += '<span class="badge-icon" title="Rigorista">&#127919;</span>';
-    if (isOff)                    badges += '<span class="badge-icon" title="Ruolo offensivo">&#9889;</span>';
-    if (player.status)            badges += '<span class="badge-icon" title="' + (statusTip[player.status] || '') + '">' + (statusIcon[player.status] || '') + '</span>';
+    if (isOff)                    badges += '<span class="badge-icon" title="Offensivo">&#9889;</span>';
+    if (player.status)            badges += '<span class="badge-icon" title="' + (statusTip[player.status]||'') + '">' + (statusIcon[player.status]||'') + '</span>';
     if (player.injury_prone)      badges += '<span class="badge-icon" title="Si infortuna spesso">&#129657;</span>';
 
     var wBtns = '';
@@ -101,11 +131,12 @@ const UI = {
 
     var currSection = '';
     if (sc && sc.matches > 0) {
-      currSection = '<div class="card-stats-section-label card-stats-curr-label">&#128293; Stagione in corso (' + sc.matches + ' pres.)</div>' +
+      currSection =
+        '<div class="card-stats-section-label card-stats-curr-label">&#128293; Stagione in corso (' + sc.matches + ' pres.)</div>' +
         '<div class="card-stats">' +
-        '<div class="stat"><span class="stat-label">FV media</span><span class="stat-val curr-val">' + sc.fantavote + '</span></div>' +
-        '<div class="stat"><span class="stat-label">Gol</span><span class="stat-val curr-val">' + sc.goals + '</span></div>' +
-        '<div class="stat"><span class="stat-label">Assist</span><span class="stat-val curr-val">' + sc.assists + '</span></div>' +
+          '<div class="stat"><span class="stat-label">FV media</span><span class="stat-val curr-val">' + sc.fantavote + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Gol</span><span class="stat-val curr-val">' + sc.goals + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Assist</span><span class="stat-val curr-val">' + sc.assists + '</span></div>' +
         '</div>';
     }
 
@@ -129,10 +160,11 @@ const UI = {
         '</div>' +
         '<div class="card-stats-section-label">&#128197; Stagione precedente</div>' +
         '<div class="card-stats">' +
-          '<div class="stat"><span class="stat-label">FV media</span><span class="stat-val">' + (sp.fantavote || '-') + '</span></div>' +
-          '<div class="stat"><span class="stat-label">Gol</span><span class="stat-val">' + (sp.goals || 0) + '</span></div>' +
-          '<div class="stat"><span class="stat-label">Assist</span><span class="stat-val">' + (sp.assists || 0) + '</span></div>' +
-          '<div class="stat"><span class="stat-label">Presenze</span><span class="stat-val">' + (sp.matches || 0) + '</span></div>' +
+          '<div class="stat"><span class="stat-label">FV media</span><span class="stat-val">' + (sp.fantavote||'-') + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Voto medio</span><span class="stat-val">' + (sp.avg_vote||'-') + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Gol</span><span class="stat-val">' + (sp.goals||0) + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Assist</span><span class="stat-val">' + (sp.assists||0) + '</span></div>' +
+          '<div class="stat"><span class="stat-label">Presenze</span><span class="stat-val">' + (sp.matches||0) + '</span></div>' +
         '</div>' +
         currSection +
       '</div>' +
@@ -147,13 +179,15 @@ const UI = {
       '<div class="card-auction">' +
         '<div class="auction-input-row">' +
           '<input type="number" class="price-input" id="price-' + player.id + '" placeholder="Prezzo asta" min="1" oninput="UI.evaluateAuction(\'' + player.id + '\')" onkeydown="if(event.key===\'Enter\') UI.evaluateAuction(\'' + player.id + '\')" />' +
-          '<button class="btn-focus" onclick="App.openFocus(\'' + player.id + '\')" title="Modalit focus">&#128269;</button>' +
-          '<button class="btn-beaten" onclick="App.markBeaten(\'' + player.id + '\')" title="Gi battuto">&#128296;</button>' +
+          '<button class="btn-focus" onclick="App.openFocus(\'' + player.id + '\')" title="Focus">&#128269;</button>' +
+          '<button class="btn-beaten" onclick="App.markBeaten(\'' + player.id + '\')" title="Battuto">&#128296;</button>' +
         '</div>' +
         '<div class="auction-result" id="result-' + player.id + '"></div>' +
       '</div>' +
     '</div>';
   },
+
+  // ─── VALUTAZIONE ────────────────────────────────────────────────────────────
 
   evaluateAuction(playerId, targetBoxId) {
     var player  = AppState.players.find(function(p){ return p.id === playerId; });
@@ -192,6 +226,8 @@ const UI = {
       '<button class="btn-buy ' + (domCls==='red'?'btn-buy-disabled':'') + '" onclick="App.buyPlayer(\'' + playerId + '\',' + price + ')">Acquista per ' + price + ' cr</button>';
   },
 
+  // ─── FOCUS MODE ─────────────────────────────────────────────────────────────
+
   renderFocus() {
     var playerId = AppState.focusPlayerId;
     var player   = AppState.players.find(function(p){ return p.id === playerId; });
@@ -210,16 +246,19 @@ const UI = {
     var rem     = total - spent;
     var avg     = Utils.avgBudgetPerSlot(AppState.squad, total);
     var wLabels = {want:'⭐ Voglio',watch:'👀 Osservo',avoid:'❌ Evito'};
-
     var focusStatusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
     var focusStatusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
+
     var badges = '';
     if (player.tag==='sleeper') badges += '<span class="badge badge-sleeper">SLEEPER</span>';
     if (player.tag==='hype')    badges += '<span class="badge badge-hype">HYPE</span>';
     if (player.on_penalties)    badges += '<span class="badge-icon" title="Rigorista">&#127919;</span>';
-    if (isOff)                  badges += '<span class="badge-icon" title="Ruolo offensivo">&#9889;</span>';
+    if (isOff)                  badges += '<span class="badge-icon" title="Offensivo">&#9889;</span>';
     if (player.status)          badges += '<span class="badge-icon" title="' + (focusStatusTip[player.status]||'') + '">' + (focusStatusIcon[player.status]||'') + '</span>';
     if (player.injury_prone)    badges += '<span class="badge-icon" title="Si infortuna spesso">&#129657;</span>';
+
+    // Watchlist badge nel focus
+    var wlBadge = wStatus ? '<span class="focus-wl-badge wl-badge-' + wStatus + '">' + (wLabels[wStatus]||'') + '</span>' : '';
 
     var overlay = document.getElementById('focus-overlay');
     if (!overlay) {
@@ -242,7 +281,7 @@ const UI = {
           '<div class="focus-badges-row">' +
             '<span class="role-pill" style="' + roleStyle + '">' + player.role + '</span>' +
             badges +
-            (wStatus ? '<span class="focus-wl-badge wl-badge-' + wStatus + '">' + (wLabels[wStatus]||'') + '</span>' : '') +
+            wlBadge +
             (inSquad ? '<span class="focus-bought-badge">✅ In rosa</span>' : '') +
           '</div>' +
         '</div>' +
@@ -253,6 +292,7 @@ const UI = {
             (target ? '<div class="focus-stat highlight-target"><span class="focus-stat-label">Tuo max</span><span class="focus-stat-val">' + target + ' cr</span></div>' : '') +
             '<div class="focus-stat"><span class="focus-stat-label">Quotazione</span><span class="focus-stat-val">' + player.price_initial + ' cr</span></div>' +
             '<div class="focus-stat"><span class="focus-stat-label">FV media</span><span class="focus-stat-val">' + (sp.fantavote||'-') + '</span></div>' +
+            '<div class="focus-stat"><span class="focus-stat-label">Voto medio</span><span class="focus-stat-val">' + (sp.avg_vote||'-') + '</span></div>' +
             '<div class="focus-stat"><span class="focus-stat-label">Gol</span><span class="focus-stat-val">' + (sp.goals||0) + '</span></div>' +
             '<div class="focus-stat"><span class="focus-stat-label">Assist</span><span class="focus-stat-val">' + (sp.assists||0) + '</span></div>' +
             '<div class="focus-stat"><span class="focus-stat-label">Presenze</span><span class="focus-stat-val">' + (sp.matches||0) + '</span></div>' +
@@ -286,6 +326,8 @@ const UI = {
     AppState.focusPlayerId = null;
   },
 
+  // ─── WATCHLIST ──────────────────────────────────────────────────────────────
+
   renderWatchlist() {
     var container = document.getElementById('watchlist-list');
     if (!container) return;
@@ -314,6 +356,7 @@ const UI = {
         var pnote   = AppState.notes[p.id] || '';
         var ptarget = AppState.targetPrices[p.id] || null;
         var inSquad = AppState.squad.some(function(s){ return s.id === p.id; });
+        var maxNow  = Utils.calcMaxOfferNow(p, AppState.squad, AppState.settings.totalBudget);
         var prioHtml = '';
         for (var n=1;n<=5;n++) prioHtml += '<button class="wl-prio-btn ' + ((AppState.priorities[p.id]||0)===n?'wl-prio-active':'') + '" onclick="App.setPriority(\'' + p.id + '\',' + n + ')">' + n + '</button>';
         html +=
@@ -326,7 +369,11 @@ const UI = {
             '</div>' +
             '<div class="wl-priority-row"><span class="wl-priority-label">Priorità:</span>' + prioHtml + '</div>' +
             '<div class="wl-player-right">' +
-              '<div class="wl-prices"><span class="wl-value">' + p.value_estimated + ' cr</span>' + (ptarget?'<span class="wl-target">max: '+ptarget+' cr</span>':'') + '</div>' +
+              '<div class="wl-prices">' +
+                '<span class="wl-value">' + p.value_estimated + ' cr</span>' +
+                '<span class="wl-maxnow">Max ora: <strong>' + maxNow + ' cr</strong></span>' +
+                (ptarget?'<span class="wl-target">tuo max: '+ptarget+' cr</span>':'') +
+              '</div>' +
               '<button class="btn-focus-sm" onclick="App.openFocus(\'' + p.id + '\')" title="Focus">&#128269;</button>' +
               '<button class="btn-remove" onclick="App.setWatchlist(\'' + p.id + '\',null)">✕</button>' +
             '</div>' +
@@ -337,6 +384,8 @@ const UI = {
     });
     container.innerHTML = html;
   },
+
+  // ─── SQUADRA ────────────────────────────────────────────────────────────────
 
   renderSquad() {
     var container = document.getElementById('squad-list');

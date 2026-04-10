@@ -7,7 +7,7 @@
   <meta name="description" content="Assistente asta fantacalcio 2025/26" />
   <title>FantAssist 2025/26</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style.css?v=12" />
+  <link rel="stylesheet" href="./style.css?v=13" />
 </head>
 <body>
 
@@ -57,6 +57,7 @@
     <button class="tab-btn"        data-tab="squad"     onclick="App.setTab('squad')">📋 Rosa</button>
   </nav>
 
+  <!-- VIEW: GIOCATORI -->
   <div id="view-players">
     <div class="filters-bar">
       <div class="filters-row">
@@ -98,11 +99,17 @@
     </div>
   </div>
 
+  <!-- VIEW: WATCHLIST + BATTUTI -->
   <div id="view-watchlist" style="display:none;">
-    <p class="wl-hint" style="padding:12px 20px 0;">Usa ⭐ 👀 ❌ nelle card per organizzare la pre-asta. Clicca 🔍 per aprire la modalità focus.</p>
+    <p class="wl-hint" style="padding:12px 20px 0;">Usa ⭐ 👀 ❌ nelle card per organizzare la pre-asta. Clicca 🔍 per il focus.</p>
     <div id="watchlist-list" style="padding:12px 20px;"></div>
+    <div class="beaten-section">
+      <div class="beaten-section-title">🔨 Giocatori battuti</div>
+      <div id="beaten-list"></div>
+    </div>
   </div>
 
+  <!-- VIEW: ROSA -->
   <div id="view-squad" style="display:none;">
     <div id="squad-list" style="padding:16px 20px;"></div>
   </div>
@@ -110,10 +117,10 @@
 </div>
 
 <!-- SCRIPTS -->
-<script src="./players.js?v=12"></script>
-<script src="./utils.js?v=12"></script>
-<script src="./ui.js?v=12"></script>
-<script src="./app.js?v=12"></script>
+<script src="./players.js?v=13"></script>
+<script src="./utils.js?v=13"></script>
+<script src="./ui.js?v=13"></script>
+<script src="./app.js?v=13"></script>
 
 <script>
   window.addEventListener('DOMContentLoaded', function() {

@@ -336,3 +336,20 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 .stat-val.curr-val {
   color: var(--accent);
 }
+
+/* ── BATTUTI ── */
+.beaten-section { padding: 12px 20px; }
+.beaten-section-title { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; margin-bottom: 8px; }
+.beaten-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--rsm); margin-bottom: 6px; opacity: 0.7; }
+.beaten-name { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; flex: 1; }
+.beaten-team { font-size: .72rem; color: var(--muted); }
+.btn-unbeaten { background: transparent; border: 1px solid var(--border); color: var(--muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: .9rem; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+.btn-unbeaten:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── WATCHLIST MAX ORA LIVE ── */
+.wl-maxnow { font-size: .72rem; color: var(--accent); font-weight: 600; }
+
+/* ── STAGIONE LABEL ── */
+.card-stats-section-label { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-family: 'Barlow', sans-serif; font-weight: 600; padding: 6px 0 2px; display: flex; align-items: center; gap: 4px; }
+.card-stats-curr-label { color: var(--accent); }
+.stat-val.curr-val { color: var(--accent); }

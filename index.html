@@ -129,6 +129,7 @@
 <!-- SCRIPTS -->
 <script src="./players.js?v=15"></script>
 <script src="./utils.js?v=15"></script>
+<script src="./scoring.js?v=1"></script>
 <script src="./ui.js?v=15"></script>
 <script src="./app.js?v=15"></script>
 
@@ -145,6 +146,114 @@
   });
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') App.closeFocus(); });
 </script>
+
+
+<!-- ====== SCORING ENGINE LOG ====== -->
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+
+    // Attende che i giocatori siano caricati da app.js (init è async)
+    // Usa un piccolo delay per essere sicuro che AppState.players sia popolato
+    setTimeout(function () {
+
+      var players = window.PLAYERS || [];
+      if (!players.length || !window.Scoring) return;
+
+      var sep  = '══════════════════════════════════════════════';
+      var line = '──────────────────────────────────────────────';
+
+      // ── Calcola tutti gli score ──
+      var all = Scoring.rankPlayers(players);
+      var excluded = players.length - all.length;
+
+      console.log(sep);
+      console.log('🎯 FANTASSIST — Undervalue Scoring Engine');
+      console.log(sep);
+      console.log('📊 ' + players.length + ' giocatori analizzati  |  ' + excluded + ' esclusi (minuti insufficienti)');
+      console.log('📐 Pesi: xG 35% · xA 25% · Gol 20% · Assist 10% · Tiri 10%');
+      console.log('💡 Score "value" = performance normalizzata ÷ prezzo^0.75');
+      console.log(line);
+
+      // ── TOP 10 ASSOLUTI ──
+      console.log('🏆 TOP 10 UNDERVALUE ASSOLUTI');
+      console.log(line);
+      var top10 = all.slice(0, 10);
+      top10.forEach(function (item, i) {
+        var p  = item.player;
+        var s  = item.score;
+        var ex = item.explanation;
+        var n  = String(i + 1).padStart(2, ' ');
+        var nm = p.name.padEnd(16, ' ');
+        var rl = p.role.padEnd(3, ' ');
+        var tm = p.team.padEnd(10, ' ');
+        var pr = String(p.price_initial + ' cr').padStart(6, ' ');
+        var sc = 'score: ' + s.normalized.toFixed(2);
+        var vl = 'value: ' + s.value.toFixed(4);
+        console.log(n + '. ' + nm + ' | ' + rl + ' | ' + tm + ' | ' + pr + ' | ' + sc + ' | ' + vl + ' | ' + ex.verdict);
+      });
+      console.log(line);
+
+      // ── TOP 3 PER REPARTO + BREAKDOWN ──
+      var reparti = [
+        { role: 'ATT', label: '⚡ ATTACCANTI' },
+        { role: 'CEN', label: '🔮 CENTROCAMPISTI' },
+        { role: 'DIF', label: '🛡️  DIFENSORI' },
+        { role: 'POR', label: '🧤 PORTIERI' }
+      ];
+
+      reparti.forEach(function (rep) {
+        var top3 = Scoring.rankPlayersByRole(players, rep.role).slice(0, 3);
+        if (!top3.length) return;
+
+        console.log('');
+        console.log(line);
+        console.log(rep.label + ' — TOP 3 UNDERVALUE');
+        console.log(line);
+
+        top3.forEach(function (item, i) {
+          var p  = item.player;
+          var s  = item.score;
+          var ex = item.explanation;
+
+          // riga riassuntiva
+          var n  = String(i + 1).padStart(2, ' ');
+          var nm = p.name.padEnd(16, ' ');
+          var tm = p.team.padEnd(10, ' ');
+          var pr = String(p.price_initial + ' cr').padStart(6, ' ');
+          console.log(n + '. ' + nm + ' | ' + tm + ' | ' + pr + ' | ' + ex.verdict);
+
+          // breakdown dettagliato
+          if (ex.breakdown && ex.breakdown.length) {
+            ex.breakdown.forEach(function (b) {
+              var lbl  = ('   ' + b.label).padEnd(36, ' ');
+              var val  = '→ ' + b.value;
+              var det  = b.detail ? '  (' + b.detail + ')' : '';
+              console.log(lbl + val + det);
+            });
+          }
+
+          // flags
+          if (ex.flags && ex.flags.length) {
+            ex.flags.forEach(function (f) {
+              console.log('   ' + f);
+            });
+          }
+
+          // separatore leggero tra giocatori
+          if (i < top3.length - 1) console.log('   · · ·');
+        });
+      });
+
+      console.log('');
+      console.log(line);
+      console.log('✅ Scoring Engine caricato correttamente.');
+      console.log('💡 Suggerimento: Scoring.rankPlayers(PLAYERS) in console per la lista completa.');
+      console.log(sep);
+
+    }, 300);
+  });
+</script>
+<!-- ====== FINE SCORING ENGINE LOG ====== -->
 
 
 <!-- ====== MINI CONSOLE DEBUG ====== -->

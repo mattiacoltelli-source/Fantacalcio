@@ -8,8 +8,10 @@ var WLFilters = {
   search: ''
 };
 
-const UI = {
+// Stato filtro tab Gems
+var GemsFilter = { role: 'ALL' };
 
+const UI = {
 
   render() {
     UI.renderBudgetBar();
@@ -19,6 +21,7 @@ const UI = {
     UI.renderBeaten();
     UI.renderWatchlist();
     UI.renderSquad();
+    UI.renderGems();
   },
 
 
@@ -56,6 +59,7 @@ const UI = {
     document.getElementById('view-players').style.display   = AppState.activeTab === 'players'   ? 'block' : 'none';
     document.getElementById('view-watchlist').style.display = AppState.activeTab === 'watchlist' ? 'block' : 'none';
     document.getElementById('view-squad').style.display     = AppState.activeTab === 'squad'     ? 'block' : 'none';
+    document.getElementById('view-gems').style.display      = AppState.activeTab === 'gems'      ? 'block' : 'none';
   },
 
 
@@ -115,6 +119,24 @@ const UI = {
   },
 
 
+  // ─── SCORING BADGE ──────────────────────────────────────────────────────────
+  // Restituisce l'HTML del badge verdict da mostrare nelle card
+
+  scoringBadge(player) {
+    if (!window.Scoring) return '';
+    var score = Scoring.calculateScore(player);
+    if (!score || score.excluded) return '';
+    var verdict = score.isGoalkeeper
+      ? Scoring.getVerdict(score.value, score.raw, 'POR')
+      : Scoring.getVerdict(score.value, score.normalized, player.role);
+    var cls = verdict.startsWith('💎') ? 'badge-gem'
+            : verdict.startsWith('✅') ? 'badge-good'
+            : verdict.startsWith('⚖️') ? 'badge-meh'
+            : 'badge-overpaid';
+    return '<span class="scoring-badge ' + cls + '" title="Undervalue Score">' + verdict + '</span>';
+  },
+
+
   // ─── PLAYER CARD ────────────────────────────────────────────────────────────
 
   playerCard(player) {
@@ -137,6 +159,9 @@ const UI = {
     if (player.status)            badges += '<span class="badge-icon" title="' + (statusTip[player.status]||'') + '">' + (statusIcon[player.status]||'') + '</span>';
     if (player.injury_prone)      badges += '<span class="badge-icon" title="Si infortuna spesso">&#129657;</span>';
 
+    // ── Scoring badge ──
+    badges += UI.scoringBadge(player);
+
     var wBtns = '';
     var wArr = [{s:'want',i:'⭐',l:'Voglio'},{s:'watch',i:'👀',l:'Osservo'},{s:'avoid',i:'❌',l:'Evito'}];
     for (var i=0; i<wArr.length; i++) {
@@ -147,9 +172,7 @@ const UI = {
     // ── Stagione in corso (curr) ──
     var currSection = '';
     if (sc && sc.matches > 0) {
-      var goalsP90curr = sc.matches > 0 && sc.goals != null ? (sc.goals / sc.matches * 90 / 90).toFixed(2) : '-';
-      // gol/90 approssimato su minuti medi stimati (90 min * presenze)
-      goalsP90curr = sc.goals != null ? (sc.goals / Math.max(sc.matches, 1)).toFixed(2) : '-';
+      var goalsP90curr = sc.goals != null ? (sc.goals / Math.max(sc.matches, 1)).toFixed(2) : '-';
       currSection =
         '<div class="card-stats-section-label card-stats-curr-label">&#128293; Stagione in corso (' + sc.matches + ' pres.)</div>' +
         '<div class="card-stats">' +
@@ -157,7 +180,6 @@ const UI = {
           '<div class="stat"><span class="stat-label">Gol</span><span class="stat-val curr-val">' + (sc.goals||0) + '</span></div>' +
           '<div class="stat"><span class="stat-label">Assist</span><span class="stat-val curr-val">' + (sc.assists||0) + '</span></div>' +
         '</div>';
-      // Dati avanzati curr se disponibili
       if (sc.xg != null) {
         var gol90curr = sc.goals_per90 != null ? sc.goals_per90.toFixed(2) : (sc.matches > 0 ? (sc.goals / sc.matches).toFixed(2) : '-');
         currSection +=
@@ -324,6 +346,9 @@ const UI = {
       }
     }
 
+    // ── Sezione scoring nel focus ──
+    var scoringSection = UI._buildScoringSection(player);
+
     var overlay = document.getElementById('focus-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -374,6 +399,7 @@ const UI = {
             '</div>'
           ) : '') +
           focusCurrSection +
+          scoringSection +
           '<div class="focus-budget-row">' +
             '<div class="focus-budget-item"><span>Rimasto</span><strong>' + rem + ' cr</strong></div>' +
             '<div class="focus-budget-item"><span>Media/slot</span><strong>' + avg + ' cr</strong></div>' +
@@ -398,10 +424,169 @@ const UI = {
   },
 
 
+  // ─── SCORING SECTION (per Focus e Gems) ─────────────────────────────────────
+
+  _buildScoringSection(player) {
+    if (!window.Scoring) return '';
+    var ex = Scoring.explainScore(player);
+    if (!ex || ex.excluded) return '';
+
+    var verdictFull = ex.verdictFull || ex.verdict;
+    var verdictCls  = verdictFull.startsWith('💎') ? 'gem'
+                    : verdictFull.startsWith('✅') ? 'good'
+                    : verdictFull.startsWith('⚖️') ? 'meh'
+                    : 'overpaid';
+
+    var html = '<div class="scoring-section">' +
+      '<div class="scoring-section-title">📊 Undervalue Score</div>' +
+      '<div class="scoring-verdict scoring-verdict-' + verdictCls + '">' + verdictFull + '</div>' +
+      '<div class="scoring-scores-row">' +
+        '<div class="scoring-score-item"><span class="scoring-score-label">Score</span><span class="scoring-score-val">' + (ex.normalized !== undefined ? ex.normalized.toFixed(2) : '-') + '</span></div>' +
+        '<div class="scoring-score-item"><span class="scoring-score-label">Value</span><span class="scoring-score-val">' + (ex.value !== undefined ? ex.value.toFixed(4) : '-') + '</span></div>' +
+      '</div>';
+
+    // Breakdown
+    if (ex.breakdown && ex.breakdown.length) {
+      html += '<div class="scoring-breakdown-title">Perché questo score:</div>' +
+              '<div class="scoring-breakdown-list">';
+      ex.breakdown.forEach(function(b) {
+        html += '<div class="scoring-breakdown-row">' +
+          '<span class="scoring-bd-label">' + b.label + '</span>' +
+          '<span class="scoring-bd-value">' + b.value + (b.weight ? ' <small>(' + b.weight + ')</small>' : '') + '</span>' +
+        '</div>';
+        if (b.detail) {
+          html += '<div class="scoring-bd-detail">' + b.detail + '</div>';
+        }
+      });
+      html += '</div>';
+    }
+
+    // Flags
+    if (ex.flags && ex.flags.length) {
+      html += '<div class="scoring-flags">';
+      ex.flags.forEach(function(f) {
+        html += '<div class="scoring-flag">' + f + '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  },
+
+
   closeFocus() {
     var overlay = document.getElementById('focus-overlay');
     if (overlay) overlay.style.display = 'none';
     AppState.focusPlayerId = null;
+  },
+
+
+  // ─── TAB GEMS ───────────────────────────────────────────────────────────────
+
+  renderGems() {
+    var container = document.getElementById('gems-list');
+    if (!container) return;
+    if (!window.Scoring) {
+      container.innerHTML = '<div class="empty-state">Scoring Engine non disponibile.</div>';
+      return;
+    }
+
+    var players = AppState.players;
+
+    // Filtro ruolo
+    var roleFilter = GemsFilter.role;
+    var filtered = roleFilter === 'ALL' ? players : players.filter(function(p){ return p.role === roleFilter; });
+
+    var ranked = Scoring.rankPlayers(filtered);
+
+    if (!ranked.length) {
+      container.innerHTML = '<div class="empty-state">Nessun giocatore con score disponibile.</div>';
+      return;
+    }
+
+    var html = '';
+    var reparti = roleFilter === 'ALL'
+      ? [{ role: 'ATT', label: '⚡ Attaccanti', icon: '⚡' },
+         { role: 'CEN', label: '🔮 Centrocampisti', icon: '🔮' },
+         { role: 'DIF', label: '🛡️ Difensori', icon: '🛡️' },
+         { role: 'POR', label: '🧤 Portieri', icon: '🧤' }]
+      : [{ role: roleFilter, label: Utils.roleLabel(roleFilter), icon: '' }];
+
+    reparti.forEach(function(rep) {
+      var repPlayers = ranked.filter(function(item){ return item.player.role === rep.role; });
+      if (!repPlayers.length) return;
+
+      html += '<div class="gems-section">' +
+        '<div class="gems-section-title">' + rep.label + '</div>';
+
+      repPlayers.forEach(function(item, idx) {
+        var p  = item.player;
+        var s  = item.score;
+        var ex = item.explanation;
+        var verdictFull = ex.verdictFull || ex.verdict;
+        var verdictCls  = verdictFull.startsWith('💎') ? 'gem'
+                        : verdictFull.startsWith('✅') ? 'good'
+                        : verdictFull.startsWith('⚖️') ? 'meh'
+                        : 'overpaid';
+        var rc = Utils.roleColor(p.role);
+
+        html += '<div class="gems-card gems-card-' + verdictCls + '">' +
+          // Header
+          '<div class="gems-card-header">' +
+            '<div class="gems-card-rank">#' + (idx + 1) + '</div>' +
+            '<div class="gems-card-identity">' +
+              '<span class="gems-name">' + p.name + '</span>' +
+              '<span class="gems-team">' + p.team + '</span>' +
+            '</div>' +
+            '<div class="gems-card-right">' +
+              '<span class="gems-price">' + p.price_initial + ' cr</span>' +
+              '<span class="gems-verdict gems-verdict-' + verdictCls + '">' + verdictFull + '</span>' +
+            '</div>' +
+          '</div>' +
+          // Score bar
+          '<div class="gems-score-row">' +
+            '<div class="gems-score-bar-wrap"><div class="gems-score-bar" style="width:' + Math.round((s.isGoalkeeper ? s.raw : s.normalized) * 100) + '%"></div></div>' +
+            '<span class="gems-score-num">' + (s.isGoalkeeper ? s.raw.toFixed(2) : s.normalized.toFixed(2)) + '</span>' +
+          '</div>';
+
+        // Breakdown
+        if (ex.breakdown && ex.breakdown.length) {
+          html += '<div class="gems-breakdown">' +
+            '<div class="gems-breakdown-title">Perché è qui:</div>';
+          ex.breakdown.forEach(function(b) {
+            html += '<div class="gems-bd-row">' +
+              '<span class="gems-bd-label">' + b.label + '</span>' +
+              '<span class="gems-bd-val">' + b.value + (b.weight ? ' <span class="gems-bd-weight">(' + b.weight + ')</span>' : '') + '</span>' +
+            '</div>';
+            if (b.detail) {
+              html += '<div class="gems-bd-detail">' + b.detail + '</div>';
+            }
+          });
+          html += '</div>';
+        }
+
+        // Flags
+        if (ex.flags && ex.flags.length) {
+          html += '<div class="gems-flags">';
+          ex.flags.forEach(function(f) {
+            html += '<span class="gems-flag">' + f + '</span>';
+          });
+          html += '</div>';
+        }
+
+        // Azioni
+        html += '<div class="gems-actions">' +
+          '<button class="btn-focus-sm" onclick="App.openFocus(\'' + p.id + '\')" title="Focus">🔍 Dettaglio</button>' +
+        '</div>';
+
+        html += '</div>'; // gems-card
+      });
+
+      html += '</div>'; // gems-section
+    });
+
+    container.innerHTML = html;
   },
 
 
@@ -456,8 +641,6 @@ const UI = {
     });
 
     var total = Object.values(groups).flat().length;
-
-    // Mostra sempre i filtri
     var filtersHtml = UI.renderWatchlistFilters();
 
     if (total === 0) {
@@ -465,7 +648,6 @@ const UI = {
       return;
     }
 
-    // Applica filtri
     var activeGroups = WLFilters.group === 'ALL' ? ['want','watch','avoid'] : [WLFilters.group];
     var labels = { want:{icon:'⭐',title:'Voglio',cls:'want'}, watch:{icon:'👀',title:'Osservo',cls:'watch'}, avoid:{icon:'❌',title:'Evito',cls:'avoid'} };
     var html = filtersHtml;
@@ -473,29 +655,19 @@ const UI = {
 
     activeGroups.forEach(function(key) {
       var players = groups[key] || [];
-
-      // Filtro ruolo
-      if (WLFilters.role !== 'ALL') {
-        players = players.filter(function(p){ return p.role === WLFilters.role; });
-      }
-      // Filtro priorità
+      if (WLFilters.role !== 'ALL') players = players.filter(function(p){ return p.role === WLFilters.role; });
       if (WLFilters.prio !== 'ALL') {
         var prioVal = parseInt(WLFilters.prio);
         players = players.filter(function(p){ return (AppState.priorities[p.id]||0) === prioVal; });
       }
-      // Filtro ricerca
       if (WLFilters.search.trim()) {
         var q = WLFilters.search.toLowerCase().trim();
-        players = players.filter(function(p){
-          return p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q);
-        });
+        players = players.filter(function(p){ return p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q); });
       }
-
       if (!players.length) return;
       totalVisible += players.length;
       var lbl = labels[key];
       html += '<div class="wl-section"><h3 class="wl-section-title wl-title-' + lbl.cls + '">' + lbl.icon + ' ' + lbl.title + ' (' + players.length + ')</h3>';
-
       players.forEach(function(p) {
         var pnote   = AppState.notes[p.id] || '';
         var ptarget = AppState.targetPrices[p.id] || null;
@@ -527,10 +699,7 @@ const UI = {
       html += '</div>';
     });
 
-    if (totalVisible === 0) {
-      html += '<div class="empty-state">Nessun giocatore corrisponde ai filtri.</div>';
-    }
-
+    if (totalVisible === 0) html += '<div class="empty-state">Nessun giocatore corrisponde ai filtri.</div>';
     container.innerHTML = html;
   },
 

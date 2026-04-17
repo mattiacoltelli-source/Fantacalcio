@@ -8,6 +8,153 @@
   <title>FantAssist 2025/26</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css?v=15" />
+
+  <style>
+    /* ── Scoring badge nelle card ──────────────────────────────────────── */
+    .scoring-badge {
+      display: inline-block;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 99px;
+      margin-left: 4px;
+      vertical-align: middle;
+      letter-spacing: .02em;
+    }
+    .badge-gem     { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
+    .badge-good    { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e55; }
+    .badge-meh     { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b55; }
+    .badge-overpaid{ background: #ef444422; color: #ef4444; border: 1px solid #ef444455; }
+
+    /* ── Scoring section nel Focus ─────────────────────────────────────── */
+    .scoring-section {
+      margin-top: 16px;
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .scoring-section-title {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+    .scoring-verdict {
+      font-size: .95rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+    .scoring-verdict-gem     { background: #ffd70015; color: #ffd700; border: 1px solid #ffd70033; }
+    .scoring-verdict-good    { background: #22c55e15; color: #22c55e; border: 1px solid #22c55e33; }
+    .scoring-verdict-meh     { background: #f59e0b15; color: #f59e0b; border: 1px solid #f59e0b33; }
+    .scoring-verdict-overpaid{ background: #ef444415; color: #ef4444; border: 1px solid #ef444433; }
+
+    .scoring-scores-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .scoring-score-item { display: flex; flex-direction: column; align-items: center; background: #0f172a; border-radius: 8px; padding: 6px 14px; }
+    .scoring-score-label{ font-size: .65rem; color: #64748b; }
+    .scoring-score-val  { font-size: 1rem; font-weight: 700; color: #e2e8f0; }
+
+    .scoring-breakdown-title { font-size: .7rem; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+    .scoring-breakdown-list  { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .scoring-breakdown-row   { display: flex; justify-content: space-between; align-items: baseline; font-size: .78rem; }
+    .scoring-bd-label  { color: #94a3b8; }
+    .scoring-bd-value  { color: #e2e8f0; font-weight: 600; }
+    .scoring-bd-value small { color: #64748b; font-weight: 400; }
+    .scoring-bd-detail { font-size: .7rem; color: #475569; margin: -2px 0 4px 0; }
+
+    .scoring-flags { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    .scoring-flag  { font-size: .78rem; color: #94a3b8; }
+
+    /* ── Tab Gems ──────────────────────────────────────────────────────── */
+    .gems-filters-bar {
+      padding: 12px 20px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+    }
+    .gems-filter-label { font-size: .75rem; color: #64748b; }
+
+    .gems-section { padding: 0 16px 12px; }
+    .gems-section-title {
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 14px 0 8px;
+      border-bottom: 1px solid #1e293b;
+      margin-bottom: 10px;
+    }
+
+    .gems-card {
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border-left: 3px solid transparent;
+    }
+    .gems-card-gem     { border-left-color: #ffd700; }
+    .gems-card-good    { border-left-color: #22c55e; }
+    .gems-card-meh     { border-left-color: #f59e0b; }
+    .gems-card-overpaid{ border-left-color: #ef4444; }
+
+    .gems-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .gems-card-rank   { font-size: .8rem; font-weight: 700; color: #475569; min-width: 24px; }
+    .gems-card-identity { flex: 1; }
+    .gems-name  { display: block; font-size: .95rem; font-weight: 700; color: #f1f5f9; }
+    .gems-team  { font-size: .75rem; color: #64748b; }
+    .gems-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .gems-price { font-size: .8rem; color: #94a3b8; }
+    .gems-verdict { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+    .gems-verdict-gem     { background: #ffd70015; color: #ffd700; }
+    .gems-verdict-good    { background: #22c55e15; color: #22c55e; }
+    .gems-verdict-meh     { background: #f59e0b15; color: #f59e0b; }
+    .gems-verdict-overpaid{ background: #ef444415; color: #ef4444; }
+
+    .gems-score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .gems-score-bar-wrap { flex: 1; height: 5px; background: #1e293b; border-radius: 99px; overflow: hidden; }
+    .gems-score-bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 99px; transition: width .4s; }
+    .gems-score-num { font-size: .78rem; font-weight: 700; color: #94a3b8; min-width: 32px; text-align: right; }
+
+    .gems-breakdown { margin-bottom: 8px; }
+    .gems-breakdown-title { font-size: .68rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+    .gems-bd-row   { display: flex; justify-content: space-between; font-size: .76rem; margin-bottom: 3px; }
+    .gems-bd-label { color: #64748b; }
+    .gems-bd-val   { color: #cbd5e1; font-weight: 600; }
+    .gems-bd-weight{ color: #475569; font-weight: 400; font-size: .7rem; }
+    .gems-bd-detail{ font-size: .68rem; color: #334155; margin: -1px 0 3px; }
+
+    .gems-flags { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+    .gems-flag  { font-size: .75rem; color: #94a3b8; }
+
+    .gems-actions { display: flex; gap: 8px; }
+    .gems-actions .btn-focus-sm {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: .78rem;
+      cursor: pointer;
+    }
+    .gems-actions .btn-focus-sm:active { background: #334155; }
+
+    .gems-intro {
+      padding: 14px 20px 0;
+      font-size: .8rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .gems-intro strong { color: #64748b; }
+  </style>
 </head>
 <body>
 
@@ -60,6 +207,7 @@
     <button class="tab-btn active" data-tab="players"   onclick="App.setTab('players')">🔍 Giocatori</button>
     <button class="tab-btn"        data-tab="watchlist" onclick="App.setTab('watchlist')">⭐ Watchlist</button>
     <button class="tab-btn"        data-tab="squad"     onclick="App.setTab('squad')">📋 Rosa</button>
+    <button class="tab-btn"        data-tab="gems"      onclick="App.setTab('gems')">💎 Gems</button>
   </nav>
 
 
@@ -123,14 +271,35 @@
   </div>
 
 
+  <!-- VIEW: GEMS -->
+  <div id="view-gems" style="display:none;">
+    <div class="gems-intro">
+      <strong>💎 Undervalue Finder</strong> — Giocatori con alto potenziale nascosto rispetto al prezzo.<br>
+      Lo score combina xG, xA, volume offensivo e il divario tra expected e reale.<br>
+      Clicca 🔍 Dettaglio per vedere il breakdown completo di ogni giocatore.
+    </div>
+    <div class="gems-filters-bar">
+      <span class="gems-filter-label">Filtra:</span>
+      <select class="filter-select" onchange="GemsFilter.role=this.value; UI.renderGems();">
+        <option value="ALL">Tutti i ruoli</option>
+        <option value="ATT">⚡ Attaccanti</option>
+        <option value="CEN">🔮 Centrocampisti</option>
+        <option value="DIF">🛡️ Difensori</option>
+        <option value="POR">🧤 Portieri</option>
+      </select>
+    </div>
+    <div id="gems-list" style="padding:0 4px 24px;"></div>
+  </div>
+
+
 </div>
 
 
 <!-- SCRIPTS -->
 <script src="./players.js?v=15"></script>
 <script src="./utils.js?v=15"></script>
-<script src="./scoring.js?v=1"></script>
-<script src="./ui.js?v=15"></script>
+<script src="./scoring.js?v=2"></script>
+<script src="./ui.js?v=16"></script>
 <script src="./app.js?v=15"></script>
 
 
@@ -146,114 +315,6 @@
   });
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') App.closeFocus(); });
 </script>
-
-
-<!-- ====== SCORING ENGINE LOG ====== -->
-<script>
-  window.addEventListener('DOMContentLoaded', function () {
-
-    // Attende che i giocatori siano caricati da app.js (init è async)
-    // Usa un piccolo delay per essere sicuro che AppState.players sia popolato
-    setTimeout(function () {
-
-      var players = window.PLAYERS || [];
-      if (!players.length || !window.Scoring) return;
-
-      var sep  = '══════════════════════════════════════════════';
-      var line = '──────────────────────────────────────────────';
-
-      // ── Calcola tutti gli score ──
-      var all = Scoring.rankPlayers(players);
-      var excluded = players.length - all.length;
-
-      console.log(sep);
-      console.log('🎯 FANTASSIST — Undervalue Scoring Engine');
-      console.log(sep);
-      console.log('📊 ' + players.length + ' giocatori analizzati  |  ' + excluded + ' esclusi (minuti insufficienti)');
-      console.log('📐 Pesi: xG 35% · xA 25% · Gol 20% · Assist 10% · Tiri 10%');
-      console.log('💡 Score "value" = performance normalizzata ÷ prezzo^0.75');
-      console.log(line);
-
-      // ── TOP 10 ASSOLUTI ──
-      console.log('🏆 TOP 10 UNDERVALUE ASSOLUTI');
-      console.log(line);
-      var top10 = all.slice(0, 10);
-      top10.forEach(function (item, i) {
-        var p  = item.player;
-        var s  = item.score;
-        var ex = item.explanation;
-        var n  = String(i + 1).padStart(2, ' ');
-        var nm = p.name.padEnd(16, ' ');
-        var rl = p.role.padEnd(3, ' ');
-        var tm = p.team.padEnd(10, ' ');
-        var pr = String(p.price_initial + ' cr').padStart(6, ' ');
-        var sc = 'score: ' + s.normalized.toFixed(2);
-        var vl = 'value: ' + s.value.toFixed(4);
-        console.log(n + '. ' + nm + ' | ' + rl + ' | ' + tm + ' | ' + pr + ' | ' + sc + ' | ' + vl + ' | ' + ex.verdict);
-      });
-      console.log(line);
-
-      // ── TOP 3 PER REPARTO + BREAKDOWN ──
-      var reparti = [
-        { role: 'ATT', label: '⚡ ATTACCANTI' },
-        { role: 'CEN', label: '🔮 CENTROCAMPISTI' },
-        { role: 'DIF', label: '🛡️  DIFENSORI' },
-        { role: 'POR', label: '🧤 PORTIERI' }
-      ];
-
-      reparti.forEach(function (rep) {
-        var top3 = Scoring.rankPlayersByRole(players, rep.role).slice(0, 3);
-        if (!top3.length) return;
-
-        console.log('');
-        console.log(line);
-        console.log(rep.label + ' — TOP 3 UNDERVALUE');
-        console.log(line);
-
-        top3.forEach(function (item, i) {
-          var p  = item.player;
-          var s  = item.score;
-          var ex = item.explanation;
-
-          // riga riassuntiva
-          var n  = String(i + 1).padStart(2, ' ');
-          var nm = p.name.padEnd(16, ' ');
-          var tm = p.team.padEnd(10, ' ');
-          var pr = String(p.price_initial + ' cr').padStart(6, ' ');
-          console.log(n + '. ' + nm + ' | ' + tm + ' | ' + pr + ' | ' + ex.verdict);
-
-          // breakdown dettagliato
-          if (ex.breakdown && ex.breakdown.length) {
-            ex.breakdown.forEach(function (b) {
-              var lbl  = ('   ' + b.label).padEnd(36, ' ');
-              var val  = '→ ' + b.value;
-              var det  = b.detail ? '  (' + b.detail + ')' : '';
-              console.log(lbl + val + det);
-            });
-          }
-
-          // flags
-          if (ex.flags && ex.flags.length) {
-            ex.flags.forEach(function (f) {
-              console.log('   ' + f);
-            });
-          }
-
-          // separatore leggero tra giocatori
-          if (i < top3.length - 1) console.log('   · · ·');
-        });
-      });
-
-      console.log('');
-      console.log(line);
-      console.log('✅ Scoring Engine caricato correttamente.');
-      console.log('💡 Suggerimento: Scoring.rankPlayers(PLAYERS) in console per la lista completa.');
-      console.log(sep);
-
-    }, 300);
-  });
-</script>
-<!-- ====== FINE SCORING ENGINE LOG ====== -->
 
 
 <!-- ====== MINI CONSOLE DEBUG ====== -->
@@ -295,25 +356,14 @@
   (function () {
     const CLICKS  = 7;
     const TIMEOUT = 500;
-
     const panel = document.getElementById('miniConsole');
-    let visible = false;
-    let count = 0;
-    let last  = 0;
-
-    /* trigger: 7 click rapidi ovunque */
+    let visible = false, count = 0, last = 0;
     document.addEventListener('click', function () {
       const now = Date.now();
       if (now - last > TIMEOUT) count = 0;
       last = now;
-      if (++count >= CLICKS) {
-        count = 0;
-        visible = !visible;
-        panel.classList.toggle('mc-visible', visible);
-      }
+      if (++count >= CLICKS) { count = 0; visible = !visible; panel.classList.toggle('mc-visible', visible); }
     });
-
-    /* aggiunge riga al pannello */
     function add(text, cls) {
       const t = new Date().toLocaleTimeString('it-IT');
       const p = document.createElement('p');
@@ -323,20 +373,13 @@
       if (panel.children.length > 100) panel.removeChild(panel.firstChild);
       panel.scrollTop = panel.scrollHeight;
     }
-
-    /* intercetta console.log / warn / error */
-    const _log   = console.log.bind(console);
-    const _warn  = console.warn.bind(console);
-    const _error = console.error.bind(console);
+    const _log = console.log.bind(console), _warn = console.warn.bind(console), _error = console.error.bind(console);
     console.log   = function (...a) { _log(...a);   add(a.join(' ')); };
     console.warn  = function (...a) { _warn(...a);  add(a.join(' '), 'mc-warn'); };
     console.error = function (...a) { _error(...a); add(a.join(' '), 'mc-err'); };
-
-    /* errori JS non gestiti */
     window.addEventListener('error', function (e) {
       add('❌ ' + e.message + '  (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')', 'mc-err');
     });
-
   })();
 </script>
 <!-- ====== FINE MINI CONSOLE DEBUG ====== -->

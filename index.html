@@ -21,6 +21,8 @@
       vertical-align: middle;
       letter-spacing: .02em;
     }
+    /* v3: badge-elite per 🔥 Elite */
+    .badge-elite   { background: #ff6b0022; color: #ff6b00; border: 1px solid #ff6b0055; }
     .badge-gem     { background: #ffd70022; color: #ffd700; border: 1px solid #ffd70055; }
     .badge-good    { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e55; }
     .badge-meh     { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b55; }
@@ -55,10 +57,15 @@
     .scoring-verdict-meh     { background: #f59e0b15; color: #f59e0b; border: 1px solid #f59e0b33; }
     .scoring-verdict-overpaid{ background: #ef444415; color: #ef4444; border: 1px solid #ef444433; }
 
-    .scoring-scores-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .scoring-scores-row { display: flex; gap: 12px; margin-bottom: 10px; }
     .scoring-score-item { display: flex; flex-direction: column; align-items: center; background: #0f172a; border-radius: 8px; padding: 6px 14px; }
     .scoring-score-label{ font-size: .65rem; color: #64748b; }
     .scoring-score-val  { font-size: 1rem; font-weight: 700; color: #e2e8f0; }
+
+    /* v3: riga fascia prezzo */
+    .scoring-tier-row  { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: .76rem; }
+    .scoring-tier-label{ color: #64748b; }
+    .scoring-tier-val  { color: #94a3b8; font-weight: 600; }
 
     .scoring-breakdown-title { font-size: .7rem; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
     .scoring-breakdown-list  { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
@@ -119,10 +126,15 @@
     .gems-verdict-meh     { background: #f59e0b15; color: #f59e0b; }
     .gems-verdict-overpaid{ background: #ef444415; color: #ef4444; }
 
-    .gems-score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .gems-score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .gems-score-bar-wrap { flex: 1; height: 5px; background: #1e293b; border-radius: 99px; overflow: hidden; }
     .gems-score-bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 99px; transition: width .4s; }
-    .gems-score-num { font-size: .78rem; font-weight: 700; color: #94a3b8; min-width: 32px; text-align: right; }
+    .gems-score-num { font-size: .78rem; font-weight: 700; color: #94a3b8; min-width: 46px; text-align: right; }
+
+    /* v3: riga fascia prezzo nelle gems */
+    .gems-tier-row   { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: .73rem; }
+    .gems-tier-badge { background: #1e293b; color: #64748b; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+    .gems-tier-pct   { color: #94a3b8; }
 
     .gems-breakdown { margin-bottom: 8px; }
     .gems-breakdown-title { font-size: .68rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
@@ -275,8 +287,8 @@
   <div id="view-gems" style="display:none;">
     <div class="gems-intro">
       <strong>💎 Undervalue Finder</strong> — Giocatori con alto potenziale nascosto rispetto al prezzo.<br>
-      Lo score combina xG, xA, volume offensivo e il divario tra expected e reale.<br>
-      Clicca 🔍 Dettaglio per vedere il breakdown completo di ogni giocatore.
+      Score 0–100 con smorzamento su sample piccoli. Confronto dentro la fascia prezzo.<br>
+      Clicca 🔍 Dettaglio per il breakdown completo.
     </div>
     <div class="gems-filters-bar">
       <span class="gems-filter-label">Filtra:</span>
@@ -298,8 +310,8 @@
 <!-- SCRIPTS -->
 <script src="./players.js?v=15"></script>
 <script src="./utils.js?v=15"></script>
-<script src="./scoring.js?v=2"></script>
-<script src="./ui.js?v=16"></script>
+<script src="./scoring.js?v=3"></script>
+<script src="./ui.js?v=17"></script>
 <script src="./app.js?v=15"></script>
 
 
@@ -322,9 +334,7 @@
   #miniConsole {
     display: none;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     height: 160px;
     background: rgba(0,0,0,0.88);
     border-top: 1px solid #222;
@@ -335,51 +345,37 @@
     -webkit-overflow-scrolling: touch;
   }
   #miniConsole.mc-visible { display: block; }
-  #miniConsole p {
-    margin: 0;
-    padding: 1px 0;
-    font-family: monospace;
-    font-size: 11px;
-    line-height: 1.45;
-    word-break: normal;
-    overflow-wrap: anywhere;
-    color: #4ade80;
-  }
+  #miniConsole p { margin:0; padding:1px 0; font-family:monospace; font-size:11px; line-height:1.45; word-break:normal; overflow-wrap:anywhere; color:#4ade80; }
   #miniConsole p.mc-err  { color: #f87171; }
   #miniConsole p.mc-warn { color: #fbbf24; }
   #miniConsole p.mc-net  { color: #60a5fa; }
 </style>
-
 <div id="miniConsole"></div>
-
 <script>
   (function () {
-    const CLICKS  = 7;
-    const TIMEOUT = 500;
-    const panel = document.getElementById('miniConsole');
-    let visible = false, count = 0, last = 0;
-    document.addEventListener('click', function () {
-      const now = Date.now();
-      if (now - last > TIMEOUT) count = 0;
-      last = now;
-      if (++count >= CLICKS) { count = 0; visible = !visible; panel.classList.toggle('mc-visible', visible); }
+    const CLICKS=7, TIMEOUT=500;
+    const panel=document.getElementById('miniConsole');
+    let visible=false,count=0,last=0;
+    document.addEventListener('click',function(){
+      const now=Date.now();
+      if(now-last>TIMEOUT)count=0;
+      last=now;
+      if(++count>=CLICKS){count=0;visible=!visible;panel.classList.toggle('mc-visible',visible);}
     });
-    function add(text, cls) {
-      const t = new Date().toLocaleTimeString('it-IT');
-      const p = document.createElement('p');
-      if (cls) p.className = cls;
-      p.textContent = t + ' › ' + text;
+    function add(text,cls){
+      const t=new Date().toLocaleTimeString('it-IT');
+      const p=document.createElement('p');
+      if(cls)p.className=cls;
+      p.textContent=t+' › '+text;
       panel.appendChild(p);
-      if (panel.children.length > 100) panel.removeChild(panel.firstChild);
-      panel.scrollTop = panel.scrollHeight;
+      if(panel.children.length>100)panel.removeChild(panel.firstChild);
+      panel.scrollTop=panel.scrollHeight;
     }
-    const _log = console.log.bind(console), _warn = console.warn.bind(console), _error = console.error.bind(console);
-    console.log   = function (...a) { _log(...a);   add(a.join(' ')); };
-    console.warn  = function (...a) { _warn(...a);  add(a.join(' '), 'mc-warn'); };
-    console.error = function (...a) { _error(...a); add(a.join(' '), 'mc-err'); };
-    window.addEventListener('error', function (e) {
-      add('❌ ' + e.message + '  (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')', 'mc-err');
-    });
+    const _log=console.log.bind(console),_warn=console.warn.bind(console),_error=console.error.bind(console);
+    console.log=function(...a){_log(...a);add(a.join(' '));};
+    console.warn=function(...a){_warn(...a);add(a.join(' '),'mc-warn');};
+    console.error=function(...a){_error(...a);add(a.join(' '),'mc-err');};
+    window.addEventListener('error',function(e){add('❌ '+e.message+'  ('+(e.filename||'').split('/').pop()+':'+e.lineno+')','mc-err');});
   })();
 </script>
 <!-- ====== FINE MINI CONSOLE DEBUG ====== -->

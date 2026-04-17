@@ -120,20 +120,20 @@ const UI = {
 
 
   // ─── SCORING BADGE ──────────────────────────────────────────────────────────
-  // Restituisce l'HTML del badge verdict da mostrare nelle card
+  // v3: usa label qualitativa (🔥 Elite, 💎 Ottimo affare, ecc.) invece del vecchio verdict
 
   scoringBadge(player) {
     if (!window.Scoring) return '';
     var score = Scoring.calculateScore(player);
     if (!score || score.excluded) return '';
-    var verdict = score.isGoalkeeper
-      ? Scoring.getVerdict(score.value, score.raw, 'POR')
-      : Scoring.getVerdict(score.value, score.normalized, player.role);
-    var cls = verdict.startsWith('💎') ? 'badge-gem'
-            : verdict.startsWith('✅') ? 'badge-good'
-            : verdict.startsWith('⚖️') ? 'badge-meh'
-            : 'badge-overpaid';
-    return '<span class="scoring-badge ' + cls + '" title="Undervalue Score">' + verdict + '</span>';
+    var s100  = score.isGoalkeeper ? Math.round(score.raw * 100) : (score.score100 || 0);
+    var label = Scoring.getLabel(s100, player.role);
+    var cls   = label.startsWith('🔥') ? 'badge-elite'
+              : label.startsWith('💎') ? 'badge-gem'
+              : label.startsWith('✅') ? 'badge-good'
+              : label.startsWith('⚖️') ? 'badge-meh'
+              : 'badge-overpaid';
+    return '<span class="scoring-badge ' + cls + '" title="Score: ' + s100 + '/100">' + label + '</span>';
   },
 
 
@@ -158,8 +158,6 @@ const UI = {
     if (isOff)                    badges += '<span class="badge-icon" title="Offensivo">&#9889;</span>';
     if (player.status)            badges += '<span class="badge-icon" title="' + (statusTip[player.status]||'') + '">' + (statusIcon[player.status]||'') + '</span>';
     if (player.injury_prone)      badges += '<span class="badge-icon" title="Si infortuna spesso">&#129657;</span>';
-
-    // ── Scoring badge ──
     badges += UI.scoringBadge(player);
 
     var wBtns = '';
@@ -324,7 +322,6 @@ const UI = {
 
     var wlBadge = wStatus ? '<span class="focus-wl-badge wl-badge-' + wStatus + '">' + (wLabels[wStatus]||'') + '</span>' : '';
 
-    // Sezione curr nel focus
     var focusCurrSection = '';
     if (sc && sc.matches > 0) {
       focusCurrSection =
@@ -346,7 +343,6 @@ const UI = {
       }
     }
 
-    // ── Sezione scoring nel focus ──
     var scoringSection = UI._buildScoringSection(player);
 
     var overlay = document.getElementById('focus-overlay');
@@ -369,8 +365,7 @@ const UI = {
           '</div>' +
           '<div class="focus-badges-row">' +
             '<span class="role-pill" style="' + roleStyle + '">' + player.role + '</span>' +
-            badges +
-            wlBadge +
+            badges + wlBadge +
             (inSquad ? '<span class="focus-bought-badge">✅ In rosa</span>' : '') +
           '</div>' +
         '</div>' +
@@ -424,26 +419,41 @@ const UI = {
   },
 
 
-  // ─── SCORING SECTION (per Focus e Gems) ─────────────────────────────────────
+  // ─── SCORING SECTION (Focus) ─────────────────────────────────────────────────
+  // v3: mostra score100, label qualitativa, posizione in fascia prezzo
 
   _buildScoringSection(player) {
     if (!window.Scoring) return '';
-    var ex = Scoring.explainScore(player);
+    // Calcola tier map su tutti i giocatori per avere il ranking relativo
+    var tierMap = Scoring.computeTierRankings(AppState.players);
+    var ex = Scoring.explainScore(player, tierMap);
     if (!ex || ex.excluded) return '';
 
-    var verdictFull = ex.verdictFull || ex.verdict;
-    var verdictCls  = verdictFull.startsWith('💎') ? 'gem'
-                    : verdictFull.startsWith('✅') ? 'good'
-                    : verdictFull.startsWith('⚖️') ? 'meh'
-                    : 'overpaid';
+    var label    = ex.label || ex.verdictFull || ex.verdict;
+    var labelCls = label.startsWith('🔥') ? 'gem'    // riuso colori gem per Elite
+                 : label.startsWith('💎') ? 'gem'
+                 : label.startsWith('✅') ? 'good'
+                 : label.startsWith('⚖️') ? 'meh'
+                 : 'overpaid';
+
+    var s100 = ex.score100 !== undefined ? ex.score100 : '-';
 
     var html = '<div class="scoring-section">' +
       '<div class="scoring-section-title">📊 Undervalue Score</div>' +
-      '<div class="scoring-verdict scoring-verdict-' + verdictCls + '">' + verdictFull + '</div>' +
+      '<div class="scoring-verdict scoring-verdict-' + labelCls + '">' + label + '</div>' +
       '<div class="scoring-scores-row">' +
-        '<div class="scoring-score-item"><span class="scoring-score-label">Score</span><span class="scoring-score-val">' + (ex.normalized !== undefined ? ex.normalized.toFixed(2) : '-') + '</span></div>' +
+        '<div class="scoring-score-item"><span class="scoring-score-label">Score</span><span class="scoring-score-val">' + s100 + '/100</span></div>' +
         '<div class="scoring-score-item"><span class="scoring-score-label">Value</span><span class="scoring-score-val">' + (ex.value !== undefined ? ex.value.toFixed(4) : '-') + '</span></div>' +
       '</div>';
+
+    // Posizione in fascia prezzo
+    if (ex.tierInfo) {
+      var ti = ex.tierInfo;
+      html += '<div class="scoring-tier-row">' +
+        '<span class="scoring-tier-label">Fascia ' + ti.tier + ':</span>' +
+        '<span class="scoring-tier-val">#' + ti.tierRank + '/' + ti.tierTotal + ' · ' + ti.tierLabel + '</span>' +
+      '</div>';
+    }
 
     // Breakdown
     if (ex.breakdown && ex.breakdown.length) {
@@ -454,9 +464,7 @@ const UI = {
           '<span class="scoring-bd-label">' + b.label + '</span>' +
           '<span class="scoring-bd-value">' + b.value + (b.weight ? ' <small>(' + b.weight + ')</small>' : '') + '</span>' +
         '</div>';
-        if (b.detail) {
-          html += '<div class="scoring-bd-detail">' + b.detail + '</div>';
-        }
+        if (b.detail) html += '<div class="scoring-bd-detail">' + b.detail + '</div>';
       });
       html += '</div>';
     }
@@ -464,9 +472,7 @@ const UI = {
     // Flags
     if (ex.flags && ex.flags.length) {
       html += '<div class="scoring-flags">';
-      ex.flags.forEach(function(f) {
-        html += '<div class="scoring-flag">' + f + '</div>';
-      });
+      ex.flags.forEach(function(f) { html += '<div class="scoring-flag">' + f + '</div>'; });
       html += '</div>';
     }
 
@@ -483,6 +489,7 @@ const UI = {
 
 
   // ─── TAB GEMS ───────────────────────────────────────────────────────────────
+  // v3: barra su score100, label qualitativa, badge fascia prezzo
 
   renderGems() {
     var container = document.getElementById('gems-list');
@@ -492,13 +499,10 @@ const UI = {
       return;
     }
 
-    var players = AppState.players;
-
-    // Filtro ruolo
+    var players    = AppState.players;
     var roleFilter = GemsFilter.role;
-    var filtered = roleFilter === 'ALL' ? players : players.filter(function(p){ return p.role === roleFilter; });
-
-    var ranked = Scoring.rankPlayers(filtered);
+    var filtered   = roleFilter === 'ALL' ? players : players.filter(function(p){ return p.role === roleFilter; });
+    var ranked     = Scoring.rankPlayers(filtered);
 
     if (!ranked.length) {
       container.innerHTML = '<div class="empty-state">Nessun giocatore con score disponibile.</div>';
@@ -507,32 +511,34 @@ const UI = {
 
     var html = '';
     var reparti = roleFilter === 'ALL'
-      ? [{ role: 'ATT', label: '⚡ Attaccanti', icon: '⚡' },
-         { role: 'CEN', label: '🔮 Centrocampisti', icon: '🔮' },
-         { role: 'DIF', label: '🛡️ Difensori', icon: '🛡️' },
-         { role: 'POR', label: '🧤 Portieri', icon: '🧤' }]
-      : [{ role: roleFilter, label: Utils.roleLabel(roleFilter), icon: '' }];
+      ? [{ role:'ATT', label:'⚡ Attaccanti' },
+         { role:'CEN', label:'🔮 Centrocampisti' },
+         { role:'DIF', label:'🛡️ Difensori' },
+         { role:'POR', label:'🧤 Portieri' }]
+      : [{ role: roleFilter, label: Utils.roleLabel(roleFilter) }];
 
     reparti.forEach(function(rep) {
       var repPlayers = ranked.filter(function(item){ return item.player.role === rep.role; });
       if (!repPlayers.length) return;
 
-      html += '<div class="gems-section">' +
-        '<div class="gems-section-title">' + rep.label + '</div>';
+      html += '<div class="gems-section"><div class="gems-section-title">' + rep.label + '</div>';
 
       repPlayers.forEach(function(item, idx) {
-        var p  = item.player;
-        var s  = item.score;
-        var ex = item.explanation;
-        var verdictFull = ex.verdictFull || ex.verdict;
-        var verdictCls  = verdictFull.startsWith('💎') ? 'gem'
-                        : verdictFull.startsWith('✅') ? 'good'
-                        : verdictFull.startsWith('⚖️') ? 'meh'
-                        : 'overpaid';
-        var rc = Utils.roleColor(p.role);
+        var p   = item.player;
+        var s   = item.score;
+        var ex  = item.explanation;
 
-        html += '<div class="gems-card gems-card-' + verdictCls + '">' +
-          // Header
+        var label    = ex.label || ex.verdictFull || ex.verdict;
+        var labelCls = label.startsWith('🔥') ? 'gem'
+                     : label.startsWith('💎') ? 'gem'
+                     : label.startsWith('✅') ? 'good'
+                     : label.startsWith('⚖️') ? 'meh'
+                     : 'overpaid';
+
+        var s100     = s.score100 !== undefined ? s.score100 : (s.isGoalkeeper ? Math.round(s.raw * 100) : 0);
+        var tierInfo = ex.tierInfo;
+
+        html += '<div class="gems-card gems-card-' + labelCls + '">' +
           '<div class="gems-card-header">' +
             '<div class="gems-card-rank">#' + (idx + 1) + '</div>' +
             '<div class="gems-card-identity">' +
@@ -541,27 +547,32 @@ const UI = {
             '</div>' +
             '<div class="gems-card-right">' +
               '<span class="gems-price">' + p.price_initial + ' cr</span>' +
-              '<span class="gems-verdict gems-verdict-' + verdictCls + '">' + verdictFull + '</span>' +
+              '<span class="gems-verdict gems-verdict-' + labelCls + '">' + label + '</span>' +
             '</div>' +
           '</div>' +
-          // Score bar
+          // Barra score 0–100
           '<div class="gems-score-row">' +
-            '<div class="gems-score-bar-wrap"><div class="gems-score-bar" style="width:' + Math.round((s.isGoalkeeper ? s.raw : s.normalized) * 100) + '%"></div></div>' +
-            '<span class="gems-score-num">' + (s.isGoalkeeper ? s.raw.toFixed(2) : s.normalized.toFixed(2)) + '</span>' +
+            '<div class="gems-score-bar-wrap"><div class="gems-score-bar" style="width:' + s100 + '%"></div></div>' +
+            '<span class="gems-score-num">' + s100 + '/100</span>' +
           '</div>';
+
+        // Posizione in fascia
+        if (tierInfo) {
+          html += '<div class="gems-tier-row">' +
+            '<span class="gems-tier-badge">Fascia ' + tierInfo.tier + ': #' + tierInfo.tierRank + '/' + tierInfo.tierTotal + '</span>' +
+            '<span class="gems-tier-pct">' + tierInfo.tierLabel + '</span>' +
+          '</div>';
+        }
 
         // Breakdown
         if (ex.breakdown && ex.breakdown.length) {
-          html += '<div class="gems-breakdown">' +
-            '<div class="gems-breakdown-title">Perché è qui:</div>';
+          html += '<div class="gems-breakdown"><div class="gems-breakdown-title">Perché è qui:</div>';
           ex.breakdown.forEach(function(b) {
             html += '<div class="gems-bd-row">' +
               '<span class="gems-bd-label">' + b.label + '</span>' +
               '<span class="gems-bd-val">' + b.value + (b.weight ? ' <span class="gems-bd-weight">(' + b.weight + ')</span>' : '') + '</span>' +
             '</div>';
-            if (b.detail) {
-              html += '<div class="gems-bd-detail">' + b.detail + '</div>';
-            }
+            if (b.detail) html += '<div class="gems-bd-detail">' + b.detail + '</div>';
           });
           html += '</div>';
         }
@@ -569,17 +580,11 @@ const UI = {
         // Flags
         if (ex.flags && ex.flags.length) {
           html += '<div class="gems-flags">';
-          ex.flags.forEach(function(f) {
-            html += '<span class="gems-flag">' + f + '</span>';
-          });
+          ex.flags.forEach(function(f) { html += '<span class="gems-flag">' + f + '</span>'; });
           html += '</div>';
         }
 
-        // Azioni
-        html += '<div class="gems-actions">' +
-          '<button class="btn-focus-sm" onclick="App.openFocus(\'' + p.id + '\')" title="Focus">🔍 Dettaglio</button>' +
-        '</div>';
-
+        html += '<div class="gems-actions"><button class="btn-focus-sm" onclick="App.openFocus(\'' + p.id + '\')">🔍 Dettaglio</button></div>';
         html += '</div>'; // gems-card
       });
 
@@ -629,7 +634,6 @@ const UI = {
   renderWatchlist() {
     var container = document.getElementById('watchlist-list');
     if (!container) return;
-
     var groups = { want: [], watch: [], avoid: [] };
     Object.entries(AppState.watchlist).forEach(function(entry) {
       var id = entry[0], status = entry[1];
@@ -639,20 +643,16 @@ const UI = {
     Object.keys(groups).forEach(function(k) {
       groups[k].sort(function(a,b){ return (AppState.priorities[b.id]||0)-(AppState.priorities[a.id]||0); });
     });
-
     var total = Object.values(groups).flat().length;
     var filtersHtml = UI.renderWatchlistFilters();
-
     if (total === 0) {
       container.innerHTML = filtersHtml + '<div class="empty-state">Nessun giocatore in watchlist.<br><small>Usa ⭐ 👀 ❌ nelle card per aggiungerli.</small></div>';
       return;
     }
-
     var activeGroups = WLFilters.group === 'ALL' ? ['want','watch','avoid'] : [WLFilters.group];
     var labels = { want:{icon:'⭐',title:'Voglio',cls:'want'}, watch:{icon:'👀',title:'Osservo',cls:'watch'}, avoid:{icon:'❌',title:'Evito',cls:'avoid'} };
     var html = filtersHtml;
     var totalVisible = 0;
-
     activeGroups.forEach(function(key) {
       var players = groups[key] || [];
       if (WLFilters.role !== 'ALL') players = players.filter(function(p){ return p.role === WLFilters.role; });
@@ -698,7 +698,6 @@ const UI = {
       });
       html += '</div>';
     });
-
     if (totalVisible === 0) html += '<div class="empty-state">Nessun giocatore corrisponde ai filtri.</div>';
     container.innerHTML = html;
   },
@@ -739,7 +738,6 @@ const UI = {
     clearTimeout(t._t);
     t._t = setTimeout(function(){ t.classList.remove('show'); }, 2800);
   },
-
 
   showError(msg) {
     var c = document.getElementById('player-list');

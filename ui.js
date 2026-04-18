@@ -1,6 +1,5 @@
 // ui.js — Rendering UI
 
-// Stato filtri watchlist (locale, non persiste)
 var WLFilters = {
   role:   'ALL',
   group:  'ALL',
@@ -8,8 +7,52 @@ var WLFilters = {
   search: ''
 };
 
-// Stato filtro tab Gems
 var GemsFilter = { role: 'ALL' };
+
+// ─── HELPER: label → emoji + testo ───────────────────────────────────────────
+// Le emoji vengono aggiunte SOLO qui in UI, mai nel scoring engine.
+// Questo evita la corruzione di caratteri su Android.
+
+function _labelDisplay(label) {
+  if (!label) return '';
+  if (label === 'Elite')        return '&#128293; Elite';        // 🔥
+  if (label === 'Ottimo affare')return '&#128142; Ottimo affare'; // 💎
+  if (label === 'Buono')        return '&#9989; Buono';          // ✅
+  if (label === 'Medio')        return '&#9878;&#65039; Medio';  // ⚖️ → uso unicode dec sicuro
+  if (label === 'Scarso')       return '&#9888;&#65039; Scarso'; // ⚠️
+  // Verdicts
+  if (label === 'GEM')          return '&#128142; GEM';
+  if (label === 'BUONO')        return '&#9989; BUONO';
+  if (label === 'MEDIA')        return '&#9878;&#65039; MEDIA';
+  if (label === 'CARO')         return '&#9888;&#65039; CARO';
+  return label;
+}
+
+function _labelCss(label) {
+  if (!label) return 'meh';
+  if (label === 'Elite')         return 'elite';
+  if (label === 'Ottimo affare') return 'gem';
+  if (label === 'Buono' || label === 'GEM' || label === 'BUONO') return 'good';
+  if (label === 'Medio' || label === 'MEDIA') return 'meh';
+  return 'overpaid';
+}
+
+// ─── HELPER: flag → emoji + testo ────────────────────────────────────────────
+// Stessa logica: flag arriva come testo puro da scoring, noi aggiungiamo l'icona
+
+function _flagDisplay(flag) {
+  if (!flag) return '';
+  if (flag.indexOf('xG non convertiti') >= 0)   return '&#127808; ' + flag;  // 🍀
+  if (flag.indexOf('xA non convertiti') >= 0)   return '&#127914; ' + flag;  // 🎪
+  if (flag.indexOf('Pochi minuti') >= 0)         return '&#9888;&#65039; ' + flag;
+  if (flag.indexOf('Poche presenze') >= 0)       return '&#9888;&#65039; ' + flag;
+  if (flag.indexOf('Rigorista') >= 0)            return '&#127919; ' + flag;  // 🎯
+  if (flag.indexOf('SLEEPER') >= 0)              return '&#128142; ' + flag;  // 💎
+  if (flag.indexOf('Ballottaggio') >= 0)         return '&#128993; ' + flag;  // 🟡
+  if (flag.indexOf('Infortuni') >= 0)            return '&#129657; ' + flag;  // 🩹
+  if (flag.indexOf('prev') >= 0 || flag.indexOf('Fonte') >= 0) return '&#128202; ' + flag; // 📊
+  return flag;
+}
 
 const UI = {
 
@@ -120,7 +163,6 @@ const UI = {
 
 
   // ─── SCORING BADGE ──────────────────────────────────────────────────────────
-  // v3: usa label qualitativa (🔥 Elite, 💎 Ottimo affare, ecc.) invece del vecchio verdict
 
   scoringBadge(player) {
     if (!window.Scoring) return '';
@@ -128,12 +170,8 @@ const UI = {
     if (!score || score.excluded) return '';
     var s100  = score.isGoalkeeper ? Math.round(score.raw * 100) : (score.score100 || 0);
     var label = Scoring.getLabel(s100, player.role);
-    var cls   = label.startsWith('🔥') ? 'badge-elite'
-              : label.startsWith('💎') ? 'badge-gem'
-              : label.startsWith('✅') ? 'badge-good'
-              : label.startsWith('⚖️') ? 'badge-meh'
-              : 'badge-overpaid';
-    return '<span class="scoring-badge ' + cls + '" title="Score: ' + s100 + '/100">' + label + '</span>';
+    var cls   = _labelCss(label);
+    return '<span class="scoring-badge badge-' + cls + '" title="Score: ' + s100 + '/100">' + _labelDisplay(label) + '</span>';
   },
 
 
@@ -148,7 +186,7 @@ const UI = {
     var sp        = player.stats_prev || player.stats || {};
     var sc        = player.stats_curr || null;
     var isOff     = ['ATT','CEN'].includes(player.role) && ((sp.goals || 0) >= 5 || (sp.assists || 0) >= 5);
-    var statusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
+    var statusIcon = { starter: '&#128994;', risk: '&#128993;', bench: '&#128308;' };
     var statusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
 
     var badges = '';
@@ -161,13 +199,12 @@ const UI = {
     badges += UI.scoringBadge(player);
 
     var wBtns = '';
-    var wArr = [{s:'want',i:'⭐',l:'Voglio'},{s:'watch',i:'👀',l:'Osservo'},{s:'avoid',i:'❌',l:'Evito'}];
+    var wArr = [{s:'want',i:'&#11088;',l:'Voglio'},{s:'watch',i:'&#128064;',l:'Osservo'},{s:'avoid',i:'&#10060;',l:'Evito'}];
     for (var i=0; i<wArr.length; i++) {
       var b = wArr[i];
       wBtns += '<button class="wl-btn ' + (wStatus===b.s?'wl-active-'+b.s:'') + '" onclick="App.setWatchlist(\'' + player.id + '\',\'' + b.s + '\')" title="' + b.l + '">' + b.i + '</button>';
     }
 
-    // ── Stagione in corso (curr) ──
     var currSection = '';
     if (sc && sc.matches > 0) {
       var goalsP90curr = sc.goals != null ? (sc.goals / Math.max(sc.matches, 1)).toFixed(2) : '-';
@@ -270,9 +307,9 @@ const UI = {
   showResultBox(boxId, playerId, status, advice, alert, maxNow, price) {
     var box = document.getElementById(boxId);
     if (!box) return;
-    var sMap = { AFFARE:{cls:'green',icon:'🟢',label:'AFFARE'}, OK:{cls:'yellow',icon:'🟡',label:'OK'}, OVERPAY:{cls:'red',icon:'🔴',label:'OVERPAY'} };
+    var sMap = { AFFARE:{cls:'green',icon:'&#128994;',label:'AFFARE'}, OK:{cls:'yellow',icon:'&#128993;',label:'OK'}, OVERPAY:{cls:'red',icon:'&#128308;',label:'OVERPAY'} };
     var aMap = { OK:{cls:'green',label:'Budget OK'}, ATTENTO:{cls:'yellow',label:'Attento al budget'}, NON_COMPRARE:{cls:'red',label:'Non comprare'} };
-    var s = sMap[status] || {cls:'neutral',icon:'⚪',label:status};
+    var s = sMap[status] || {cls:'neutral',icon:'&#9898;',label:status};
     var a = aMap[advice]  || {cls:'neutral',label:advice};
     var domCls = (advice==='NON_COMPRARE'||status==='OVERPAY') ? 'red' : (advice==='ATTENTO'||status==='OK') ? 'yellow' : 'green';
     box.innerHTML =
@@ -308,8 +345,8 @@ const UI = {
     var spent   = Utils.getTotalSpent(AppState.squad);
     var rem     = total - spent;
     var avg     = Utils.avgBudgetPerSlot(AppState.squad, total);
-    var wLabels = {want:'⭐ Voglio',watch:'👀 Osservo',avoid:'❌ Evito'};
-    var focusStatusIcon = { starter: '🟢', risk: '🟡', bench: '🔴' };
+    var wLabels = {want:'&#11088; Voglio',watch:'&#128064; Osservo',avoid:'&#10060; Evito'};
+    var focusStatusIcon = { starter: '&#128994;', risk: '&#128993;', bench: '&#128308;' };
     var focusStatusTip  = { starter: 'Titolare fisso', risk: 'Ballottaggio', bench: 'Rischio panchina' };
 
     var badges = '';
@@ -359,14 +396,14 @@ const UI = {
           '<div class="focus-title-row">' +
             '<div>' +
               '<div class="focus-player-name">' + player.name + '</div>' +
-              '<div class="focus-player-sub">' + player.team + ' · ' + player.advanced_role + '</div>' +
+              '<div class="focus-player-sub">' + player.team + ' &middot; ' + player.advanced_role + '</div>' +
             '</div>' +
-            '<button class="focus-close" onclick="App.closeFocus()">✕</button>' +
+            '<button class="focus-close" onclick="App.closeFocus()">&#10005;</button>' +
           '</div>' +
           '<div class="focus-badges-row">' +
             '<span class="role-pill" style="' + roleStyle + '">' + player.role + '</span>' +
             badges + wlBadge +
-            (inSquad ? '<span class="focus-bought-badge">✅ In rosa</span>' : '') +
+            (inSquad ? '<span class="focus-bought-badge">&#9989; In rosa</span>' : '') +
           '</div>' +
         '</div>' +
         '<div class="focus-body">' +
@@ -420,44 +457,35 @@ const UI = {
 
 
   // ─── SCORING SECTION (Focus) ─────────────────────────────────────────────────
-  // v3: mostra score100, label qualitativa, posizione in fascia prezzo
 
   _buildScoringSection(player) {
     if (!window.Scoring) return '';
-    // Calcola tier map su tutti i giocatori per avere il ranking relativo
     var tierMap = Scoring.computeTierRankings(AppState.players);
     var ex = Scoring.explainScore(player, tierMap);
     if (!ex || ex.excluded) return '';
 
-    var label    = ex.label || ex.verdictFull || ex.verdict;
-    var labelCls = label.startsWith('🔥') ? 'gem'    // riuso colori gem per Elite
-                 : label.startsWith('💎') ? 'gem'
-                 : label.startsWith('✅') ? 'good'
-                 : label.startsWith('⚖️') ? 'meh'
-                 : 'overpaid';
-
-    var s100 = ex.score100 !== undefined ? ex.score100 : '-';
+    var label    = ex.label || '';
+    var labelCls = _labelCss(label);
+    var s100     = ex.score100 !== undefined ? ex.score100 : '-';
 
     var html = '<div class="scoring-section">' +
-      '<div class="scoring-section-title">📊 Undervalue Score</div>' +
-      '<div class="scoring-verdict scoring-verdict-' + labelCls + '">' + label + '</div>' +
+      '<div class="scoring-section-title">&#128202; Undervalue Score</div>' +
+      '<div class="scoring-verdict scoring-verdict-' + labelCls + '">' + _labelDisplay(label) + '</div>' +
       '<div class="scoring-scores-row">' +
         '<div class="scoring-score-item"><span class="scoring-score-label">Score</span><span class="scoring-score-val">' + s100 + '/100</span></div>' +
         '<div class="scoring-score-item"><span class="scoring-score-label">Value</span><span class="scoring-score-val">' + (ex.value !== undefined ? ex.value.toFixed(4) : '-') + '</span></div>' +
       '</div>';
 
-    // Posizione in fascia prezzo
     if (ex.tierInfo) {
       var ti = ex.tierInfo;
       html += '<div class="scoring-tier-row">' +
         '<span class="scoring-tier-label">Fascia ' + ti.tier + ':</span>' +
-        '<span class="scoring-tier-val">#' + ti.tierRank + '/' + ti.tierTotal + ' · ' + ti.tierLabel + '</span>' +
+        '<span class="scoring-tier-val">#' + ti.tierRank + '/' + ti.tierTotal + ' &middot; ' + ti.tierLabel + '</span>' +
       '</div>';
     }
 
-    // Breakdown
     if (ex.breakdown && ex.breakdown.length) {
-      html += '<div class="scoring-breakdown-title">Perché questo score:</div>' +
+      html += '<div class="scoring-breakdown-title">Perche questo score:</div>' +
               '<div class="scoring-breakdown-list">';
       ex.breakdown.forEach(function(b) {
         html += '<div class="scoring-breakdown-row">' +
@@ -469,10 +497,9 @@ const UI = {
       html += '</div>';
     }
 
-    // Flags
     if (ex.flags && ex.flags.length) {
       html += '<div class="scoring-flags">';
-      ex.flags.forEach(function(f) { html += '<div class="scoring-flag">' + f + '</div>'; });
+      ex.flags.forEach(function(f) { html += '<div class="scoring-flag">' + _flagDisplay(f) + '</div>'; });
       html += '</div>';
     }
 
@@ -489,7 +516,6 @@ const UI = {
 
 
   // ─── TAB GEMS ───────────────────────────────────────────────────────────────
-  // v3: barra su score100, label qualitativa, badge fascia prezzo
 
   renderGems() {
     var container = document.getElementById('gems-list');
@@ -511,10 +537,10 @@ const UI = {
 
     var html = '';
     var reparti = roleFilter === 'ALL'
-      ? [{ role:'ATT', label:'⚡ Attaccanti' },
-         { role:'CEN', label:'🔮 Centrocampisti' },
-         { role:'DIF', label:'🛡️ Difensori' },
-         { role:'POR', label:'🧤 Portieri' }]
+      ? [{ role:'ATT', label:'&#9889; Attaccanti' },
+         { role:'CEN', label:'&#128302; Centrocampisti' },
+         { role:'DIF', label:'Difensori' },
+         { role:'POR', label:'Portieri' }]
       : [{ role: roleFilter, label: Utils.roleLabel(roleFilter) }];
 
     reparti.forEach(function(rep) {
@@ -524,17 +550,11 @@ const UI = {
       html += '<div class="gems-section"><div class="gems-section-title">' + rep.label + '</div>';
 
       repPlayers.forEach(function(item, idx) {
-        var p   = item.player;
-        var s   = item.score;
-        var ex  = item.explanation;
-
-        var label    = ex.label || ex.verdictFull || ex.verdict;
-        var labelCls = label.startsWith('🔥') ? 'gem'
-                     : label.startsWith('💎') ? 'gem'
-                     : label.startsWith('✅') ? 'good'
-                     : label.startsWith('⚖️') ? 'meh'
-                     : 'overpaid';
-
+        var p        = item.player;
+        var s        = item.score;
+        var ex       = item.explanation;
+        var label    = ex.label || '';
+        var labelCls = _labelCss(label);
         var s100     = s.score100 !== undefined ? s.score100 : (s.isGoalkeeper ? Math.round(s.raw * 100) : 0);
         var tierInfo = ex.tierInfo;
 
@@ -547,16 +567,14 @@ const UI = {
             '</div>' +
             '<div class="gems-card-right">' +
               '<span class="gems-price">' + p.price_initial + ' cr</span>' +
-              '<span class="gems-verdict gems-verdict-' + labelCls + '">' + label + '</span>' +
+              '<span class="gems-verdict gems-verdict-' + labelCls + '">' + _labelDisplay(label) + '</span>' +
             '</div>' +
           '</div>' +
-          // Barra score 0–100
           '<div class="gems-score-row">' +
             '<div class="gems-score-bar-wrap"><div class="gems-score-bar" style="width:' + s100 + '%"></div></div>' +
             '<span class="gems-score-num">' + s100 + '/100</span>' +
           '</div>';
 
-        // Posizione in fascia
         if (tierInfo) {
           html += '<div class="gems-tier-row">' +
             '<span class="gems-tier-badge">Fascia ' + tierInfo.tier + ': #' + tierInfo.tierRank + '/' + tierInfo.tierTotal + '</span>' +
@@ -564,9 +582,8 @@ const UI = {
           '</div>';
         }
 
-        // Breakdown
         if (ex.breakdown && ex.breakdown.length) {
-          html += '<div class="gems-breakdown"><div class="gems-breakdown-title">Perché è qui:</div>';
+          html += '<div class="gems-breakdown"><div class="gems-breakdown-title">Perche e qui:</div>';
           ex.breakdown.forEach(function(b) {
             html += '<div class="gems-bd-row">' +
               '<span class="gems-bd-label">' + b.label + '</span>' +
@@ -577,18 +594,17 @@ const UI = {
           html += '</div>';
         }
 
-        // Flags
         if (ex.flags && ex.flags.length) {
           html += '<div class="gems-flags">';
-          ex.flags.forEach(function(f) { html += '<span class="gems-flag">' + f + '</span>'; });
+          ex.flags.forEach(function(f) { html += '<span class="gems-flag">' + _flagDisplay(f) + '</span>'; });
           html += '</div>';
         }
 
-        html += '<div class="gems-actions"><button class="btn-focus-sm" onclick="App.openFocus(\'' + p.id + '\')">🔍 Dettaglio</button></div>';
-        html += '</div>'; // gems-card
+        html += '<div class="gems-actions"><button class="btn-focus-sm" onclick="App.openFocus(\'' + p.id + '\')">&#128269; Dettaglio</button></div>';
+        html += '</div>';
       });
 
-      html += '</div>'; // gems-section
+      html += '</div>';
     });
 
     container.innerHTML = html;
@@ -600,7 +616,7 @@ const UI = {
   renderWatchlistFilters() {
     return (
       '<div class="wl-filters-bar">' +
-        '<input type="text" class="wl-search-input" placeholder="🔍 Cerca nella watchlist..." ' +
+        '<input type="text" class="wl-search-input" placeholder="&#128269; Cerca nella watchlist..." ' +
           'value="' + WLFilters.search + '" ' +
           'oninput="WLFilters.search=this.value; UI.renderWatchlist();" />' +
         '<div class="wl-filters-row">' +
@@ -613,18 +629,18 @@ const UI = {
           '</select>' +
           '<select class="filter-select" onchange="WLFilters.group=this.value; UI.renderWatchlist();">' +
             '<option value="ALL"' + (WLFilters.group==='ALL'?' selected':'') + '>Tutti i gruppi</option>' +
-            '<option value="want"' + (WLFilters.group==='want'?' selected':'') + '>⭐ Voglio</option>' +
-            '<option value="watch"' + (WLFilters.group==='watch'?' selected':'') + '>👀 Osservo</option>' +
-            '<option value="avoid"' + (WLFilters.group==='avoid'?' selected':'') + '>❌ Evito</option>' +
+            '<option value="want"' + (WLFilters.group==='want'?' selected':'') + '>&#11088; Voglio</option>' +
+            '<option value="watch"' + (WLFilters.group==='watch'?' selected':'') + '>&#128064; Osservo</option>' +
+            '<option value="avoid"' + (WLFilters.group==='avoid'?' selected':'') + '>&#10060; Evito</option>' +
           '</select>' +
           '<select class="filter-select" onchange="WLFilters.prio=this.value; UI.renderWatchlist();">' +
-            '<option value="ALL"' + (WLFilters.prio==='ALL'?' selected':'') + '>Tutte le priorità</option>' +
-            '<option value="5"'   + (WLFilters.prio==='5'?' selected':'')   + '>Priorità 5</option>' +
-            '<option value="4"'   + (WLFilters.prio==='4'?' selected':'')   + '>Priorità 4</option>' +
-            '<option value="3"'   + (WLFilters.prio==='3'?' selected':'')   + '>Priorità 3</option>' +
-            '<option value="2"'   + (WLFilters.prio==='2'?' selected':'')   + '>Priorità 2</option>' +
-            '<option value="1"'   + (WLFilters.prio==='1'?' selected':'')   + '>Priorità 1</option>' +
-            '<option value="0"'   + (WLFilters.prio==='0'?' selected':'')   + '>Senza priorità</option>' +
+            '<option value="ALL"' + (WLFilters.prio==='ALL'?' selected':'') + '>Tutte le priorita</option>' +
+            '<option value="5"'   + (WLFilters.prio==='5'?' selected':'')   + '>Priorita 5</option>' +
+            '<option value="4"'   + (WLFilters.prio==='4'?' selected':'')   + '>Priorita 4</option>' +
+            '<option value="3"'   + (WLFilters.prio==='3'?' selected':'')   + '>Priorita 3</option>' +
+            '<option value="2"'   + (WLFilters.prio==='2'?' selected':'')   + '>Priorita 2</option>' +
+            '<option value="1"'   + (WLFilters.prio==='1'?' selected':'')   + '>Priorita 1</option>' +
+            '<option value="0"'   + (WLFilters.prio==='0'?' selected':'')   + '>Senza priorita</option>' +
           '</select>' +
         '</div>' +
       '</div>'
@@ -646,11 +662,11 @@ const UI = {
     var total = Object.values(groups).flat().length;
     var filtersHtml = UI.renderWatchlistFilters();
     if (total === 0) {
-      container.innerHTML = filtersHtml + '<div class="empty-state">Nessun giocatore in watchlist.<br><small>Usa ⭐ 👀 ❌ nelle card per aggiungerli.</small></div>';
+      container.innerHTML = filtersHtml + '<div class="empty-state">Nessun giocatore in watchlist.<br><small>Usa &#11088; &#128064; &#10060; nelle card per aggiungerli.</small></div>';
       return;
     }
     var activeGroups = WLFilters.group === 'ALL' ? ['want','watch','avoid'] : [WLFilters.group];
-    var labels = { want:{icon:'⭐',title:'Voglio',cls:'want'}, watch:{icon:'👀',title:'Osservo',cls:'watch'}, avoid:{icon:'❌',title:'Evito',cls:'avoid'} };
+    var labels = { want:{icon:'&#11088;',title:'Voglio',cls:'want'}, watch:{icon:'&#128064;',title:'Osservo',cls:'watch'}, avoid:{icon:'&#10060;',title:'Evito',cls:'avoid'} };
     var html = filtersHtml;
     var totalVisible = 0;
     activeGroups.forEach(function(key) {
@@ -681,9 +697,9 @@ const UI = {
               '<span class="wl-name">' + p.name + '</span>' +
               '<span class="wl-meta" style="color:' + Utils.roleColor(p.role) + '">' + p.role + '</span>' +
               '<span class="wl-team">' + p.team + '</span>' +
-              (inSquad ? '<span class="wl-badge-bought">✅ Acquistato</span>' : '') +
+              (inSquad ? '<span class="wl-badge-bought">&#9989; Acquistato</span>' : '') +
             '</div>' +
-            '<div class="wl-priority-row"><span class="wl-priority-label">Priorità:</span>' + prioHtml + '</div>' +
+            '<div class="wl-priority-row"><span class="wl-priority-label">Priorita:</span>' + prioHtml + '</div>' +
             '<div class="wl-player-right">' +
               '<div class="wl-prices">' +
                 '<span class="wl-value">' + p.value_estimated + ' cr</span>' +
@@ -691,7 +707,7 @@ const UI = {
                 (ptarget?'<span class="wl-target">tuo max: '+ptarget+' cr</span>':'') +
               '</div>' +
               '<button class="btn-focus-sm" onclick="App.openFocus(\'' + p.id + '\')" title="Focus">&#128269;</button>' +
-              '<button class="btn-remove" onclick="App.setWatchlist(\'' + p.id + '\',null)">✕</button>' +
+              '<button class="btn-remove" onclick="App.setWatchlist(\'' + p.id + '\',null)">&#10005;</button>' +
             '</div>' +
             (pnote ? '<div class="wl-note">"' + pnote + '"</div>' : '') +
           '</div>';
@@ -721,7 +737,7 @@ const UI = {
       if (!players.length) return;
       html += '<div class="squad-section"><h3 class="squad-role-title" style="color:' + Utils.roleColor(role) + '">' + Utils.roleLabel(role) + ' (' + players.length + ')</h3>';
       players.forEach(function(p) {
-        html += '<div class="squad-row"><div class="squad-player-info"><span class="squad-name">' + p.name + '</span><span class="squad-team">' + p.team + '</span></div><div class="squad-player-right"><span class="squad-paid">' + p.paid + ' cr</span><button class="btn-remove" onclick="App.removePlayer(\'' + p.id + '\')">✕</button></div></div>';
+        html += '<div class="squad-row"><div class="squad-player-info"><span class="squad-name">' + p.name + '</span><span class="squad-team">' + p.team + '</span></div><div class="squad-player-right"><span class="squad-paid">' + p.paid + ' cr</span><button class="btn-remove" onclick="App.removePlayer(\'' + p.id + '\')">&#10005;</button></div></div>';
       });
       html += '</div>';
     });
